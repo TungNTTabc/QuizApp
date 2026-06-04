@@ -77,12 +77,12 @@ public class RegisterFrame extends JFrame {
         
         rightPanel.add(row1); rightPanel.add(Box.createVerticalStrut(15));
 
-        // Hàng 2 (MSSV + Ngày sinh)
+        // Hàng 2 (Mã số + Ngày sinh)
         JPanel row2 = new JPanel(new GridLayout(1, 2, 10, 0));
         row2.setOpaque(false);
         row2.setMaximumSize(new Dimension(800, 50)); // Cố định chiều cao
         
-        txtMSSV = createField("MSSV (Giáo viên ghi 0):");
+        txtMSSV = createField("Mã số:");
         row2.add(txtMSSV);
         txtDob = createField("dd/mm/yyyy (ngày sinh) (VD:1/1/2001):");
         row2.add(txtDob);
@@ -163,8 +163,13 @@ public class RegisterFrame extends JFrame {
         String email = txtEmail.getText().trim();
         String address = txtAddress.getText().trim();
 
-        if (username.isEmpty() || password.isEmpty() || fullName.isEmpty() || dobStr.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Tài khoản, mật khẩu, tên và ngày sinh không được để trống!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+        if (username.isEmpty() || password.isEmpty() || fullName.isEmpty() || dobStr.isEmpty() || mssv.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Tài khoản, mật khẩu, họ tên, ngày sinh và Mã số không được để trống!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        if (mssv.equals("0")) {
+            JOptionPane.showMessageDialog(this, "Mã số không được là 0 (đây là mã riêng của Admin)!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
@@ -177,19 +182,13 @@ public class RegisterFrame extends JFrame {
             return;
         }
 
-        // Cảnh báo giáo viên phải nhập MSSV là 0
-        if (roleCode.equals("GV") && !mssv.equals("0")) {
-            JOptionPane.showMessageDialog(this, "Lỗi: Mã số sinh viên của giáo viên PHẢI là 0! Vui lòng nhập 0 cho MSSV.", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) {
                 JOptionPane.showMessageDialog(this, "Không thể kết nối đến Database! Vui lòng kiểm tra lại cấu hình DBConnection.", "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
-            // Kiểm tra trùng lặp Tài khoản, Họ Tên, MSSV
+            // Kiểm tra trùng lặp Tài khoản, Họ Tên, Mã số
             String checkSql = "SELECT Username, FullName, StudentID FROM Users WHERE Username = ? OR FullName = ? OR (StudentID = ? AND StudentID != '0')";
             PreparedStatement psCheck = conn.prepareStatement(checkSql);
             psCheck.setString(1, username);
@@ -211,7 +210,7 @@ public class RegisterFrame extends JFrame {
                     return;
                 }
                 if (mssv.equalsIgnoreCase(existMssv) && !mssv.equals("0")) {
-                    JOptionPane.showMessageDialog(this, "MSSV này đã tồn tại! Mỗi học sinh phải có một MSSV riêng biệt.", "Lỗi trùng lặp", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Mã số này đã tồn tại! Mỗi người dùng phải có một Mã số riêng biệt.", "Lỗi trùng lặp", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
             }
@@ -224,7 +223,7 @@ public class RegisterFrame extends JFrame {
             pstmt.setString(4, fullName);
             pstmt.setDate(5, sqlDob);
             pstmt.setString(6, gender);
-            pstmt.setString(7, roleCode.equals("GV") ? "0" : mssv);
+            pstmt.setString(7, mssv);
             pstmt.setString(8, className);
             pstmt.setString(9, subject);
             pstmt.setString(10, phone);

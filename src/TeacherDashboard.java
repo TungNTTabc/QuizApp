@@ -10,7 +10,8 @@ public class TeacherDashboard extends JFrame {
 
     public TeacherDashboard(User user) {
         this.currentUser = user;
-        setTitle("Giáo viên: " + user.getFullName());
+        boolean isAdmin = user.getUsername().equals("admin");
+        setTitle(isAdmin ? "Admin: " + user.getFullName() : "Giáo viên: " + user.getFullName());
         setSize(1000, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -19,73 +20,133 @@ public class TeacherDashboard extends JFrame {
         JPanel topMenu = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         topMenu.setBackground(new Color(95, 225, 235)); // Màu xanh cyan
 
-        JButton btnAddQuestion = createMenuButton("Thêm câu hỏi");
-        JButton btnViewQuestion = createMenuButton("Xem câu hỏi");
-        JButton btnAddExam = createMenuButton("Thêm bài thi");
-        JButton btnViewExam = createMenuButton("Xem bài thi");
-        JButton btnViewResult = createMenuButton("Kết quả bài thi");
-        JButton btnUpdateInfo = createMenuButton("Thay đổi thông tin");
-        JButton btnLogout = createMenuButton("Đăng xuất");
-
-        topMenu.add(btnAddQuestion);
-        topMenu.add(btnViewQuestion);
-        topMenu.add(btnAddExam);
-        topMenu.add(btnViewExam);
-        topMenu.add(btnViewResult);
-        topMenu.add(btnUpdateInfo);
-        topMenu.add(btnLogout);
-
-        add(topMenu, BorderLayout.NORTH);
-
-        // Phần nội dung chính (Dùng CardLayout để chuyển trang)
         cardLayout = new CardLayout();
         contentPanel = new JPanel(cardLayout);
         contentPanel.setBackground(new Color(230, 230, 230)); // Màu xám nhạt như thiết kế
 
-        // Tạo màn hình giới thiệu ban đầu
-        JPanel welcomePanel = createTeacherIntroPanel();
+        if (isAdmin) {
+            JButton btnManageTeachers = createMenuButton("Quản lý Giáo viên");
+            JButton btnManageStudents = createMenuButton("Quản lý Học sinh");
+            JButton btnManageQuestions = createMenuButton("Quản lý Câu hỏi");
+            JButton btnManageExams = createMenuButton("Quản lý Bài thi");
+            JButton btnUpdateInfo = createMenuButton("Thay đổi thông tin");
+            JButton btnLogout = createMenuButton("Đăng xuất");
 
-        // Khởi tạo các màn hình
-        T_ViewQuestionPanel viewQuestionPanel = new T_ViewQuestionPanel(cardLayout, contentPanel);
-        T_AddExamPanel addExamPanel = new T_AddExamPanel(user);
-        T_ViewExamPanel viewExamPanel = new T_ViewExamPanel(user);
-        T_ViewResultPanel viewResultPanel = new T_ViewResultPanel(user);
-        T_UpdateInfoPanel updateInfoPanel = new T_UpdateInfoPanel(user);
+            topMenu.add(btnManageTeachers);
+            topMenu.add(btnManageStudents);
+            topMenu.add(btnManageQuestions);
+            topMenu.add(btnManageExams);
+            topMenu.add(btnUpdateInfo);
+            topMenu.add(btnLogout);
 
-        // Thêm các màn hình vào CardLayout
-        contentPanel.add(welcomePanel, "Welcome");
-        contentPanel.add(createAddQuestionPanel(), "AddQuestion");
-        contentPanel.add(viewQuestionPanel, "ViewQuestion");
-        contentPanel.add(addExamPanel, "AddExam");
-        contentPanel.add(viewExamPanel, "ViewExam");
-        contentPanel.add(viewResultPanel, "ViewResult");
-        contentPanel.add(updateInfoPanel, "UpdateInfo");
+            add(topMenu, BorderLayout.NORTH);
 
-        add(contentPanel, BorderLayout.CENTER);
+            // Màn hình chào mừng cho Admin
+            JPanel welcomePanel = createAdminIntroPanel();
 
-        // --- XỬ LÝ SỰ KIỆN CÁC NÚT MENU ---
-        btnAddQuestion.addActionListener(e -> cardLayout.show(contentPanel, "AddQuestion"));
-        
-        btnViewQuestion.addActionListener(e -> {
-            viewQuestionPanel.loadQuestions(""); // Reload mới nhất
-            cardLayout.show(contentPanel, "ViewQuestion");
-        });
+            // Khởi tạo các màn hình Admin
+            A_ManageTeachersPanel manageTeachersPanel = new A_ManageTeachersPanel();
+            A_ManageStudentsPanel manageStudentsPanel = new A_ManageStudentsPanel();
+            A_ManageQuestionsPanel manageQuestionsPanel = new A_ManageQuestionsPanel();
+            A_ManageExamsPanel manageExamsPanel = new A_ManageExamsPanel();
+            T_UpdateInfoPanel updateInfoPanel = new T_UpdateInfoPanel(user);
 
-        btnAddExam.addActionListener(e -> cardLayout.show(contentPanel, "AddExam"));
+            contentPanel.add(welcomePanel, "Welcome");
+            contentPanel.add(manageTeachersPanel, "ManageTeachers");
+            contentPanel.add(manageStudentsPanel, "ManageStudents");
+            contentPanel.add(manageQuestionsPanel, "ManageQuestions");
+            contentPanel.add(manageExamsPanel, "ManageExams");
+            contentPanel.add(updateInfoPanel, "UpdateInfo");
 
-        btnViewExam.addActionListener(e -> {
-            viewExamPanel.loadExams("");
-            cardLayout.show(contentPanel, "ViewExam");
-        });
+            add(contentPanel, BorderLayout.CENTER);
 
-        btnViewResult.addActionListener(e -> cardLayout.show(contentPanel, "ViewResult"));
+            // Sự kiện các nút menu Admin
+            btnManageTeachers.addActionListener(e -> {
+                manageTeachersPanel.loadTeachers("");
+                cardLayout.show(contentPanel, "ManageTeachers");
+            });
+            btnManageStudents.addActionListener(e -> {
+                manageStudentsPanel.loadStudents("");
+                cardLayout.show(contentPanel, "ManageStudents");
+            });
+            btnManageQuestions.addActionListener(e -> {
+                manageQuestionsPanel.loadQuestions("");
+                cardLayout.show(contentPanel, "ManageQuestions");
+            });
+            btnManageExams.addActionListener(e -> {
+                manageExamsPanel.loadExams("");
+                cardLayout.show(contentPanel, "ManageExams");
+            });
+            btnUpdateInfo.addActionListener(e -> cardLayout.show(contentPanel, "UpdateInfo"));
+            btnLogout.addActionListener(e -> {
+                new LoginFrame().setVisible(true);
+                dispose();
+            });
 
-        btnUpdateInfo.addActionListener(e -> cardLayout.show(contentPanel, "UpdateInfo"));
+        } else {
+            JButton btnAddQuestion = createMenuButton("Thêm câu hỏi");
+            JButton btnViewQuestion = createMenuButton("Xem câu hỏi");
+            JButton btnAddExam = createMenuButton("Thêm bài thi");
+            JButton btnViewExam = createMenuButton("Xem bài thi");
+            JButton btnViewResult = createMenuButton("Kết quả bài thi");
+            JButton btnUpdateInfo = createMenuButton("Thay đổi thông tin");
+            JButton btnLogout = createMenuButton("Đăng xuất");
 
-        btnLogout.addActionListener(e -> {
-            new LoginFrame().setVisible(true);
-            dispose();
-        });
+            topMenu.add(btnAddQuestion);
+            topMenu.add(btnViewQuestion);
+            topMenu.add(btnAddExam);
+            topMenu.add(btnViewExam);
+            topMenu.add(btnViewResult);
+            topMenu.add(btnUpdateInfo);
+            topMenu.add(btnLogout);
+
+            add(topMenu, BorderLayout.NORTH);
+
+            // Tạo màn hình giới thiệu ban đầu
+            JPanel welcomePanel = createTeacherIntroPanel();
+
+            // Khởi tạo các màn hình
+            T_ViewQuestionPanel viewQuestionPanel = new T_ViewQuestionPanel(cardLayout, contentPanel);
+            T_AddExamPanel addExamPanel = new T_AddExamPanel(user);
+            T_ViewExamPanel viewExamPanel = new T_ViewExamPanel(user);
+            T_ViewResultPanel viewResultPanel = new T_ViewResultPanel(user);
+            T_UpdateInfoPanel updateInfoPanel = new T_UpdateInfoPanel(user);
+
+            // Thêm các màn hình vào CardLayout
+            contentPanel.add(welcomePanel, "Welcome");
+            contentPanel.add(createAddQuestionPanel(), "AddQuestion");
+            contentPanel.add(viewQuestionPanel, "ViewQuestion");
+            contentPanel.add(addExamPanel, "AddExam");
+            contentPanel.add(viewExamPanel, "ViewExam");
+            contentPanel.add(viewResultPanel, "ViewResult");
+            contentPanel.add(updateInfoPanel, "UpdateInfo");
+
+            add(contentPanel, BorderLayout.CENTER);
+
+            // --- XỬ LÝ SỰ KIỆN CÁC NÚT MENU ---
+            btnAddQuestion.addActionListener(e -> cardLayout.show(contentPanel, "AddQuestion"));
+            
+            btnViewQuestion.addActionListener(e -> {
+                viewQuestionPanel.loadQuestions(""); // Reload mới nhất
+                cardLayout.show(contentPanel, "ViewQuestion");
+            });
+
+            btnAddExam.addActionListener(e -> cardLayout.show(contentPanel, "AddExam"));
+
+            btnViewExam.addActionListener(e -> {
+                viewExamPanel.loadExams("");
+                cardLayout.show(contentPanel, "ViewExam");
+            });
+
+            btnViewResult.addActionListener(e -> cardLayout.show(contentPanel, "ViewResult"));
+
+            btnUpdateInfo.addActionListener(e -> cardLayout.show(contentPanel, "UpdateInfo"));
+
+            btnLogout.addActionListener(e -> {
+                new LoginFrame().setVisible(true);
+                dispose();
+            });
+        }
     }
 
     private JButton createMenuButton(String text) {
@@ -266,5 +327,44 @@ public class TeacherDashboard extends JFrame {
         });
 
         return panel;
+    }
+
+    private JPanel createAdminIntroPanel() {
+        JPanel wrapper = new JPanel(new GridBagLayout());
+        wrapper.setOpaque(false);
+
+        JPanel box = new JPanel();
+        box.setBackground(Color.WHITE);
+        box.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(200, 200, 200), 1),
+            BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        ));
+        box.setLayout(new BoxLayout(box, BoxLayout.Y_AXIS));
+        box.setPreferredSize(new Dimension(900, 500));
+
+        JLabel lblTitle = new JLabel("Hướng dẫn chức năng dành cho Admin");
+        lblTitle.setFont(new Font("Arial", Font.BOLD, 24));
+        lblTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+        box.add(lblTitle);
+        box.add(Box.createVerticalStrut(20));
+
+        JTextArea txtDesc = new JTextArea(
+            "1. Quản lý Giáo viên: Xem thông tin chi tiết hoặc xóa vĩnh viễn các tài khoản giáo viên khỏi hệ thống.\n\n" +
+            "2. Quản lý Học sinh: Xem thông tin chi tiết hoặc xóa vĩnh viễn các tài khoản học sinh khỏi hệ thống.\n\n" +
+            "3. Quản lý Câu hỏi: Xem nội dung chi tiết của tất cả các câu hỏi tự luyện tập và xóa chúng.\n\n" +
+            "4. Quản lý Bài thi: Xem nội dung chi tiết của tất cả các đề thi và xóa chúng.\n\n" +
+            "5. Thay đổi thông tin: Cập nhật thông tin cá nhân của tài khoản Admin.\n\n" +
+            "6. Đăng xuất: Nhấn nút đăng xuất để quay về màn hình đăng nhập."
+        );
+        txtDesc.setFont(new Font("Arial", Font.PLAIN, 16));
+        txtDesc.setEditable(false);
+        txtDesc.setLineWrap(true);
+        txtDesc.setWrapStyleWord(true);
+        txtDesc.setOpaque(false);
+        txtDesc.setBorder(null);
+        box.add(txtDesc);
+
+        wrapper.add(box);
+        return wrapper;
     }
 }

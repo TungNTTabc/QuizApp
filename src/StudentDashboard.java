@@ -139,9 +139,9 @@ public class StudentDashboard extends JFrame {
             "1. Câu hỏi ôn tập: Chọn môn học, số lượng câu hỏi và thời gian, sau đó làm bài luyện tập. Kết quả sẽ được lưu lại.\n\n" +
             "2. Xem lịch sử: Xem lại các lần đã làm bài, biết điểm số và thời gian từng lần.\n\n" +
             "3. Làm bài thi: Chọn bài thi hiện có, làm bài và nộp; hệ thống cho phép thi lại nhiều lần.\n\n" +
-            "4. Kết quả bài thi: Chọn bài thi để xem bảng kết quả của mình và các bạn khác, bao gồm họ tên, MSSV, số câu đúng và thời gian.\n\n" +
+            "4. Kết quả bài thi: Chọn bài thi để xem bảng kết quả của mình và các bạn khác, bao gồm họ tên, mã số, số câu đúng và thời gian.\n\n" +
             "5. Ghi chú: Viết hoặc chỉnh sửa ghi chú cá nhân để lưu lại ý kiến, nhắc nhở hoặc bài tập.\n\n" +
-            "6. Thay đổi thông tin: Cập nhật tài khoản, họ và tên, MSSV và các thông tin cá nhân khác (ngoại trừ vai trò) để sử dụng cho đăng nhập sau.\n\n" +
+            "6. Thay đổi thông tin: Cập nhật tài khoản, họ và tên, mã số và các thông tin cá nhân khác (ngoại trừ vai trò) để sử dụng cho đăng nhập sau.\n\n" +
             "7. Đăng xuất: Nhấn nút đăng xuất để kết thúc phiên và quay lại màn hình đăng nhập."
         );
         txtDesc.setFont(new Font("Arial", Font.PLAIN, 16));

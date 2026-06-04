@@ -7,8 +7,9 @@ public class DBConnection {
     // Thay đổi thông tin này cho phù hợp với máy của bạn
     private static final String URL = "jdbc:sqlserver://localhost:1433;databaseName=QuizAppDB;encrypt=true;trustServerCertificate=true;";
     //private static final String URL = "jdbc:sqlserver://localhost:1433;databaseName=QuizAppDB;encrypt=true;trustServerCertificate=true;integratedSecurity=true;";
-    private static final String USER = "quizadmin"; // Tên đăng nhập SQL Server (thường là sa)
-    private static final String PASSWORD = "123"; // Mật khẩu SQL Server của bạn
+    private static final String USER = "sa"; // Tên đăng nhập SQL Server (thường là sa)
+    private static final String PASSWORD = "12345"; // Mật khẩu SQL Server của bạn
+
 
     public static Connection getConnection() {
         Connection conn = null;

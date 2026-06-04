@@ -70,12 +70,12 @@ public class T_UpdateInfoPanel extends JPanel {
         
         rightPanel.add(row1); rightPanel.add(Box.createVerticalStrut(15));
 
-        // Hàng 2 (MSSV + Ngày sinh)
+        // Hàng 2 (Mã số + Ngày sinh)
         JPanel row2 = new JPanel(new GridLayout(1, 2, 10, 0));
         row2.setOpaque(false);
         row2.setMaximumSize(new Dimension(800, 50));
         
-        txtMSSV = createField("MSSV:");
+        txtMSSV = createField("Mã số:");
         row2.add(txtMSSV);
         
         txtDob = createField("dd/mm/yyyy (ngày sinh) (VD:1/1/2001):");
@@ -180,10 +180,7 @@ public class T_UpdateInfoPanel extends JPanel {
                     
                     while (rsEx.next()) {
                         int examId = rsEx.getInt("ExamID");
-                        // Xóa PracticeHistory & ExamResults liên kết với bài thi này (do học sinh làm)
-                        PreparedStatement p1 = conn.prepareStatement("DELETE FROM PracticeHistory WHERE ExamID = ?");
-                        p1.setInt(1, examId); p1.executeUpdate();
-                        
+                        // Xóa ExamResults liên kết với bài thi này (do học sinh làm)
                         PreparedStatement p2 = conn.prepareStatement("DELETE FROM ExamResults WHERE ExamID = ?");
                         p2.setInt(1, examId); p2.executeUpdate();
                         
@@ -244,13 +241,20 @@ public class T_UpdateInfoPanel extends JPanel {
         String oldUsername = currentUser.getUsername();
         String isTeacher = currentUser.getRole().equals("GV") ? "GV" : "HS";
         
-        // Cảnh báo giáo viên không được thay đổi MSSV từ 0 sang cái khác
-        if (isTeacher.equals("GV") && !newMSSV.equals("0")) {
-            JOptionPane.showMessageDialog(this, "Lỗi: Mã số sinh viên của giáo viên PHẢI là 0 và không thể thay đổi!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
-            return;
+        // Ràng buộc Mã số cho Admin và người dùng khác
+        if (currentUser.getUsername().equals("admin")) {
+            if (!newMSSV.equals("0")) {
+                JOptionPane.showMessageDialog(this, "Mã số của Admin bắt buộc phải là 0!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        } else {
+            if (newMSSV.isEmpty() || newMSSV.equals("0")) {
+                JOptionPane.showMessageDialog(this, "Mã số không được là 0 hoặc để trống!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
         }
         
-        // Kiểm tra trùng lặp Tài khoản, Họ Tên, MSSV
+        // Kiểm tra trùng lặp Tài khoản, Họ Tên, Mã số
         try (Connection conn = DBConnection.getConnection()) {
             // Kiểm tra Username
             if (!newUsername.equals(oldUsername)) {
@@ -281,7 +285,7 @@ public class T_UpdateInfoPanel extends JPanel {
                 checkMSSV.setInt(2, currentUser.getUserId());
                 ResultSet rsMSSV = checkMSSV.executeQuery();
                 if (rsMSSV.next() && rsMSSV.getInt(1) > 0) {
-                    JOptionPane.showMessageDialog(this, "MSSV này đã tồn tại! Mỗi học sinh phải có một MSSV riêng biệt.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Mã số này đã tồn tại! Mỗi người dùng phải có một Mã số riêng biệt.", "Lỗi", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
             }
@@ -296,7 +300,7 @@ public class T_UpdateInfoPanel extends JPanel {
             ps.setString(1, newUsername);
             ps.setString(2, new String(txtPassword.getPassword()));
             ps.setString(3, newFullName);
-            ps.setString(4, isTeacher.equals("GV") ? "0" : newMSSV);
+            ps.setString(4, newMSSV);
             ps.setDate(5, sqlDob);
             ps.setString(6, (String) genderCombo.getSelectedItem());
             ps.setString(7, txtClass.getText());

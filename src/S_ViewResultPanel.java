@@ -36,7 +36,7 @@ public class S_ViewResultPanel extends JPanel {
         add(topPanel, BorderLayout.NORTH);
 
         // Bảng kết quả
-        tableModel = new DefaultTableModel(new String[]{"STT", "Họ và Tên", "MSSV", "Số câu đúng", "Thời gian (giây)"}, 0);
+        tableModel = new DefaultTableModel(new String[]{"STT", "Họ và Tên", "Mã số", "Số câu đúng", "Thời gian (giây)"}, 0);
         table = new JTable(tableModel);
         table.setRowHeight(30);
         table.setFont(new Font("Arial", Font.PLAIN, 14));
