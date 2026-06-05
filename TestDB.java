@@ -4,9 +4,9 @@ import java.sql.SQLException;
 
 public class TestDB {
     public static void main(String[] args) {
-        String URL = "jdbc:sqlserver://localhost:1433;databaseName=QuizAppDB;encrypt=true;trustServerCertificate=true;";
+        String URL = "jdbc:sqlserver://localhost;instanceName=SQLEXPRESS;databaseName=QuizAppDB;encrypt=true;trustServerCertificate=true";
         String USER = "sa";
-        String PASSWORD = "12345";
+        String PASSWORD = "1";
         try {
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
             Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);

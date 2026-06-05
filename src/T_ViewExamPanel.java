@@ -49,7 +49,7 @@ public class T_ViewExamPanel extends JPanel {
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return;
             // Cho phép tìm kiếm theo Tiêu đề hoặc Môn học
-            String sql = "SELECT * FROM Exams WHERE TeacherID = ? AND (Title LIKE ? OR Subject LIKE ?)";
+            String sql = "SELECT e.*, s.SubjectName FROM Exams e JOIN Subjects s ON e.SubjectID = s.SubjectID WHERE e.TeacherID = ? AND (e.Title LIKE ? OR s.SubjectName LIKE ?)";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, currentUser.getUserId());
             pstmt.setString(2, "%" + keyword + "%");
@@ -59,7 +59,7 @@ public class T_ViewExamPanel extends JPanel {
             while (rs.next()) {
                 int id = rs.getInt("ExamID");
                 String title = rs.getString("Title");
-                String subject = rs.getString("Subject");
+                String subject = rs.getString("SubjectName");
                 int count = rs.getInt("QuestionCount");
                 int dur = rs.getInt("Duration");
                 
@@ -181,12 +181,12 @@ public class T_ViewExamPanel extends JPanel {
 
         try (Connection conn = DBConnection.getConnection()) {
             // Load exam info
-            PreparedStatement psEx = conn.prepareStatement("SELECT * FROM Exams WHERE ExamID = ?");
+            PreparedStatement psEx = conn.prepareStatement("SELECT e.*, s.SubjectName FROM Exams e JOIN Subjects s ON e.SubjectID = s.SubjectID WHERE e.ExamID = ?");
             psEx.setInt(1, id);
             ResultSet rsEx = psEx.executeQuery();
             if (rsEx.next()) {
                 txtTitle.setText(rsEx.getString("Title"));
-                txtSubject.setText(rsEx.getString("Subject"));
+                txtSubject.setText(rsEx.getString("SubjectName"));
                 txtDur.setText(String.valueOf(rsEx.getInt("Duration")));
             }
 
@@ -251,16 +251,18 @@ public class T_ViewExamPanel extends JPanel {
             try (Connection conn = DBConnection.getConnection()) {
                 conn.setAutoCommit(false);
                 try {
-                    PreparedStatement psEx = conn.prepareStatement("UPDATE Exams SET Title=?, Subject=?, Duration=? WHERE ExamID=?");
+                    int subjectId = DBConnection.getOrCreateSubjectId(conn, txtSubject.getText().trim());
+
+                    PreparedStatement psEx = conn.prepareStatement("UPDATE Exams SET Title=?, SubjectID=?, Duration=? WHERE ExamID=?");
                     psEx.setString(1, txtTitle.getText().trim());
-                    psEx.setString(2, txtSubject.getText().trim());
+                    psEx.setInt(2, subjectId);
                     psEx.setInt(3, Integer.parseInt(txtDur.getText().trim()));
                     psEx.setInt(4, id);
                     psEx.executeUpdate();
 
-                    PreparedStatement psQ = conn.prepareStatement("UPDATE Questions SET Subject=?, Content=?, AnswerA=?, AnswerB=?, AnswerC=?, AnswerD=?, CorrectAnswer=? WHERE QuestionID=?");
+                    PreparedStatement psQ = conn.prepareStatement("UPDATE Questions SET SubjectID=?, Content=?, AnswerA=?, AnswerB=?, AnswerC=?, AnswerD=?, CorrectAnswer=? WHERE QuestionID=?");
                     for (int i = 0; i < qIds.size(); i++) {
-                        psQ.setString(1, txtSubject.getText().trim());
+                        psQ.setInt(1, subjectId);
                         psQ.setString(2, listTxtQ.get(i).getText().trim());
                         psQ.setString(3, listTxtAns.get(i)[0].getText().trim());
                         psQ.setString(4, listTxtAns.get(i)[1].getText().trim());

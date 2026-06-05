@@ -46,7 +46,7 @@ public class A_ManageQuestionsPanel extends JPanel {
         listPanel.removeAll();
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return;
-            String sql = "SELECT * FROM Questions WHERE (Content LIKE ? OR Subject LIKE ?) AND QuestionID NOT IN (SELECT QuestionID FROM ExamQuestions)";
+            String sql = "SELECT q.*, s.SubjectName FROM Questions q JOIN Subjects s ON q.SubjectID = s.SubjectID WHERE (q.Content LIKE ? OR s.SubjectName LIKE ?) AND q.QuestionID NOT IN (SELECT QuestionID FROM ExamQuestions)";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, "%" + keyword + "%");
             pstmt.setString(2, "%" + keyword + "%");
@@ -55,7 +55,7 @@ public class A_ManageQuestionsPanel extends JPanel {
             while (rs.next()) {
                 int id = rs.getInt("QuestionID");
                 String content = rs.getString("Content");
-                String subject = rs.getString("Subject");
+                String subject = rs.getString("SubjectName");
                 
                 JPanel itemPanel = new JPanel(new BorderLayout(10, 0));
                 itemPanel.setBackground(Color.WHITE);
@@ -153,11 +153,11 @@ public class A_ManageQuestionsPanel extends JPanel {
 
         // Tải dữ liệu câu hỏi hiện tại
         try (Connection conn = DBConnection.getConnection()) {
-            PreparedStatement ps = conn.prepareStatement("SELECT * FROM Questions WHERE QuestionID = ?");
+            PreparedStatement ps = conn.prepareStatement("SELECT q.*, s.SubjectName FROM Questions q JOIN Subjects s ON q.SubjectID = s.SubjectID WHERE q.QuestionID = ?");
             ps.setInt(1, id);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
-                txtSubject.setText(rs.getString("Subject"));
+                txtSubject.setText(rs.getString("SubjectName"));
                 txtQuestion.setText(rs.getString("Content"));
                 txtAnswers[0].setText(rs.getString("AnswerA"));
                 txtAnswers[1].setText(rs.getString("AnswerB"));

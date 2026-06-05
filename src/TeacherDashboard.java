@@ -301,9 +301,11 @@ public class TeacherDashboard extends JFrame {
             else if (rdbCorrect[3].isSelected()) correctAns = 'D';
 
             try (Connection conn = DBConnection.getConnection()) {
-                String sql = "INSERT INTO Questions (Subject, Content, AnswerA, AnswerB, AnswerC, AnswerD, CorrectAnswer) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                int subjectId = DBConnection.getOrCreateSubjectId(conn, subject);
+
+                String sql = "INSERT INTO Questions (SubjectID, Content, AnswerA, AnswerB, AnswerC, AnswerD, CorrectAnswer) VALUES (?, ?, ?, ?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
-                pstmt.setString(1, subject);
+                pstmt.setInt(1, subjectId);
                 pstmt.setString(2, content);
                 pstmt.setString(3, ansA);
                 pstmt.setString(4, ansB);

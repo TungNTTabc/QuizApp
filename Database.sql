@@ -37,10 +37,17 @@ CREATE TABLE Users (
 );
 GO
 
--- 2. Bảng Câu hỏi (Do giáo viên thêm)
+-- 2. Bảng Môn học (Chuẩn hóa)
+CREATE TABLE Subjects (
+    SubjectID INT IDENTITY(1,1) PRIMARY KEY,
+    SubjectName NVARCHAR(100) UNIQUE NOT NULL
+);
+GO
+
+-- 3. Bảng Câu hỏi (Do giáo viên thêm)
 CREATE TABLE Questions (
     QuestionID INT IDENTITY(1,1) PRIMARY KEY,
-    Subject NVARCHAR(100) NOT NULL, -- Môn học (nhập tay, tự lưu để hiện thành danh sách sau)
+    SubjectID INT FOREIGN KEY REFERENCES Subjects(SubjectID),
     Content NVARCHAR(MAX) NOT NULL, -- Nội dung câu hỏi
     AnswerA NVARCHAR(255) NOT NULL,
     AnswerB NVARCHAR(255) NOT NULL,
@@ -50,45 +57,33 @@ CREATE TABLE Questions (
 );
 GO
 
--- 3. Bảng Bài thi (Do giáo viên tạo)
+-- 4. Bảng Bài thi (Do giáo viên tạo)
 CREATE TABLE Exams (
     ExamID INT IDENTITY(1,1) PRIMARY KEY,
     TeacherID INT FOREIGN KEY REFERENCES Users(UserID), -- Ai là người tạo bài thi này
     Title NVARCHAR(200) NOT NULL, -- Chủ đề bài thi
-    Subject NVARCHAR(100) NOT NULL, -- Môn học
+    SubjectID INT FOREIGN KEY REFERENCES Subjects(SubjectID),
     QuestionCount INT NOT NULL, -- Số lượng câu hỏi
     Duration INT NOT NULL -- Thời gian làm bài (tính bằng phút)
 );
 GO
 
--- 4. Bảng liên kết Bài thi - Câu hỏi
+-- 5. Bảng liên kết Bài thi - Câu hỏi
 -- Dùng để biết "Bài thi A" bao gồm những "Câu hỏi" cụ thể nào
 CREATE TABLE ExamQuestions (
-    ExamID INT FOREIGN KEY REFERENCES Exams(ExamID),
-    QuestionID INT FOREIGN KEY REFERENCES Questions(QuestionID),
+    ExamID INT FOREIGN KEY REFERENCES Exams(ExamID) ON DELETE CASCADE,
+    QuestionID INT FOREIGN KEY REFERENCES Questions(QuestionID) ON DELETE CASCADE,
     PRIMARY KEY (ExamID, QuestionID)
 );
 GO
 
--- 5. Bảng Lịch sử làm câu hỏi (Dành cho Học sinh)
--- Lưu lại: môn học, ngày/tháng làm, số câu đúng / tổng số câu, thời gian làm bài
-CREATE TABLE PracticeHistory (
-    HistoryID INT IDENTITY(1,1) PRIMARY KEY,
-    StudentID INT FOREIGN KEY REFERENCES Users(UserID),
-    Subject NVARCHAR(100),
-    DateTaken DATETIME DEFAULT GETDATE(), -- Ngày giờ làm bài
-    CorrectCount INT NOT NULL, -- Số câu đúng
-    TotalCount INT NOT NULL, -- Tổng số câu
-    DurationInSeconds INT NOT NULL -- Thời gian làm bài (lưu bằng giây cho chuẩn xác)
-);
-GO
-
--- 6. Bảng Kết quả Bài thi (Dành cho Học sinh)
--- Lưu lại: mã số sinh viên, họ tên (lấy từ UserID), số câu đúng / tổng số, thời gian
-CREATE TABLE ExamResults (
+-- 6. Bảng Kết quả (Gộp chung Lịch sử làm bài thi & luyện tập)
+CREATE TABLE QuizResults (
     ResultID INT IDENTITY(1,1) PRIMARY KEY,
-    ExamID INT FOREIGN KEY REFERENCES Exams(ExamID),
-    StudentID INT FOREIGN KEY REFERENCES Users(UserID),
+    StudentID INT FOREIGN KEY REFERENCES Users(UserID) ON DELETE CASCADE,
+    ExamID INT FOREIGN KEY REFERENCES Exams(ExamID) ON DELETE CASCADE, -- NULL nếu là bài luyện tập tự do
+    SubjectID INT FOREIGN KEY REFERENCES Subjects(SubjectID),
+    ResultType VARCHAR(20) NOT NULL, -- 'EXAM' hoặc 'PRACTICE'
     CorrectCount INT NOT NULL,
     TotalCount INT NOT NULL,
     DurationInSeconds INT NOT NULL,
@@ -96,20 +91,42 @@ CREATE TABLE ExamResults (
 );
 GO
 
--- 7. Bảng Ghi chú (Note) của Học sinh
+-- 7. Bảng Chi tiết Lần làm bài (Lưu trữ đáp án của từng câu hỏi)
+CREATE TABLE QuizAttemptDetails (
+    AttemptDetailID INT IDENTITY(1,1) PRIMARY KEY,
+    ResultID INT FOREIGN KEY REFERENCES QuizResults(ResultID) ON DELETE CASCADE,
+    QuestionID INT FOREIGN KEY REFERENCES Questions(QuestionID),
+    SelectedAnswer CHAR(1), -- Có thể NULL nếu bỏ trống
+    IsCorrect BIT NOT NULL -- 1 nếu đúng, 0 nếu sai
+);
+GO
+
+-- 8. Bảng Ghi chú (Note) của Học sinh
 CREATE TABLE StudentNotes (
     NoteID INT IDENTITY(1,1) PRIMARY KEY,
-    StudentID INT FOREIGN KEY REFERENCES Users(UserID),
+    StudentID INT FOREIGN KEY REFERENCES Users(UserID) ON DELETE CASCADE,
     NoteContent NVARCHAR(MAX)
 );
 GO
 
+-- TẠO CÁC CHỈ MỤC (INDEXES) ĐỂ TỐI ƯU HÓA TRUY VẤN
+CREATE NONCLUSTERED INDEX IX_Users_Username ON Users(Username);
+CREATE NONCLUSTERED INDEX IX_Questions_SubjectID ON Questions(SubjectID);
+CREATE NONCLUSTERED INDEX IX_Exams_TeacherID ON Exams(TeacherID);
+CREATE NONCLUSTERED INDEX IX_Exams_SubjectID ON Exams(SubjectID);
+CREATE NONCLUSTERED INDEX IX_QuizResults_StudentID ON QuizResults(StudentID);
+CREATE NONCLUSTERED INDEX IX_QuizResults_ExamID ON QuizResults(ExamID);
+CREATE NONCLUSTERED INDEX IX_QuizAttemptDetails_ResultID ON QuizAttemptDetails(ResultID);
+GO
+
 -- Chèn sẵn 1 tài khoản Giáo Viên để bạn có thể Đăng nhập ngay lập tức kiểm tra
+-- Mật khẩu băm của 'admin'
 INSERT INTO Users (Role, Username, Password, FullName, DOB, Gender, StudentID, ClassName, MainSubject, Phone, Email, Address)
-VALUES ('GV', 'admin', 'admin', N'Giáo viên Admin', '1990-01-01', N'Nam', '0', N'Không', N'Toán', '0123456789', 'admin@quiz.com', N'Hà Nội');
+VALUES ('GV', 'admin', 'wTjK0/et1vMCsGBqR7Jd6w==:0iYkU0PHNPnC3Y04vljrspzLnhtpRGIQ/e0At6HHe9o=', N'Giáo viên Admin', '1990-01-01', N'Nam', '0', N'Không', N'Toán', '0123456789', 'admin@quiz.com', N'Hà Nội');
 GO
 
 -- Chèn sẵn 1 tài khoản Học Sinh để test
+-- Mật khẩu băm của '123456'
 INSERT INTO Users (Role, Username, Password, FullName, DOB, Gender, StudentID, ClassName, MainSubject, Phone, Email, Address)
-VALUES ('HS', 'student1', '123456', N'Học sinh Test', '2005-05-05', N'Nữ', 'SV001', N'Lớp 10A1', N'Toán', '0987654321', 'hs@quiz.com', N'Hà Nội');
+VALUES ('HS', 'student1', 'S40hBP08UaFXvoquc+8azg==:50Wut7xhtyhlBMaBK7KiZRiTAFAaFkqdXGwoEQQJfes=', N'Học sinh Test', '2005-05-05', N'Nữ', 'SV001', N'Lớp 10A1', N'Toán', '0987654321', 'hs@quiz.com', N'Hà Nội');
 GO

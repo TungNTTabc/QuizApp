@@ -1,0 +1,7 @@
+*.class
+.vscode/
+.idea/
+*.jar
+*.war
+*.ear
+*.log

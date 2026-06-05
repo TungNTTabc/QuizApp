@@ -46,7 +46,10 @@ public class A_ManageExamsPanel extends JPanel {
         listPanel.removeAll();
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return;
-            String sql = "SELECT e.*, u.FullName as Creator FROM Exams e JOIN Users u ON e.TeacherID = u.UserID WHERE e.Title LIKE ? OR e.Subject LIKE ?";
+            String sql = "SELECT e.*, u.FullName as Creator, s.SubjectName FROM Exams e " +
+                         "JOIN Users u ON e.TeacherID = u.UserID " +
+                         "JOIN Subjects s ON e.SubjectID = s.SubjectID " +
+                         "WHERE e.Title LIKE ? OR s.SubjectName LIKE ?";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, "%" + keyword + "%");
             pstmt.setString(2, "%" + keyword + "%");
@@ -55,7 +58,7 @@ public class A_ManageExamsPanel extends JPanel {
             while (rs.next()) {
                 int id = rs.getInt("ExamID");
                 String title = rs.getString("Title");
-                String subject = rs.getString("Subject");
+                String subject = rs.getString("SubjectName");
                 int count = rs.getInt("QuestionCount");
                 int dur = rs.getInt("Duration");
                 String creator = rs.getString("Creator");
@@ -141,12 +144,12 @@ public class A_ManageExamsPanel extends JPanel {
 
         try (Connection conn = DBConnection.getConnection()) {
             // Tải thông tin đề thi
-            PreparedStatement psEx = conn.prepareStatement("SELECT * FROM Exams WHERE ExamID = ?");
+            PreparedStatement psEx = conn.prepareStatement("SELECT e.*, s.SubjectName FROM Exams e JOIN Subjects s ON e.SubjectID = s.SubjectID WHERE e.ExamID = ?");
             psEx.setInt(1, id);
             ResultSet rsEx = psEx.executeQuery();
             if (rsEx.next()) {
                 txtTitle.setText(rsEx.getString("Title"));
-                txtSubject.setText(rsEx.getString("Subject"));
+                txtSubject.setText(rsEx.getString("SubjectName"));
                 txtDur.setText(String.valueOf(rsEx.getInt("Duration")));
             }
 
@@ -218,21 +221,10 @@ public class A_ManageExamsPanel extends JPanel {
             try (Connection conn = DBConnection.getConnection()) {
                 conn.setAutoCommit(false);
                 try {
-                    // 1. Xóa kết quả làm bài thi liên quan
-                    try (PreparedStatement ps = conn.prepareStatement("DELETE FROM ExamResults WHERE ExamID = ?")) {
-                        ps.setInt(1, id);
-                        ps.executeUpdate();
-                    }
-                    
-                    // 2. Xóa các câu hỏi nằm trong bài thi
+                    // QuizResults, QuizAttemptDetails, ExamQuestions được tự động xóa do ON DELETE CASCADE
+                    // Nhưng ta vẫn chủ động xóa Questions vì cascade không xóa ngược lại Questions từ Exams
                     String sqlDelQ = "DELETE FROM Questions WHERE QuestionID IN (SELECT QuestionID FROM ExamQuestions WHERE ExamID = ?)";
                     try (PreparedStatement ps = conn.prepareStatement(sqlDelQ)) {
-                        ps.setInt(1, id);
-                        ps.executeUpdate();
-                    }
-                    
-                    // 3. Xóa liên kết trong ExamQuestions
-                    try (PreparedStatement ps = conn.prepareStatement("DELETE FROM ExamQuestions WHERE ExamID = ?")) {
                         ps.setInt(1, id);
                         ps.executeUpdate();
                     }

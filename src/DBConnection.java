@@ -3,13 +3,10 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class DBConnection {
-    // Thông tin kết nối SQL Server
-    // Thay đổi thông tin này cho phù hợp với máy của bạn
-    private static final String URL = "jdbc:sqlserver://localhost:1433;databaseName=QuizAppDB;encrypt=true;trustServerCertificate=true;";
-    //private static final String URL = "jdbc:sqlserver://localhost:1433;databaseName=QuizAppDB;encrypt=true;trustServerCertificate=true;integratedSecurity=true;";
-    private static final String USER = "sa"; // Tên đăng nhập SQL Server (thường là sa)
-    private static final String PASSWORD = "12345"; // Mật khẩu SQL Server của bạn
+    private static final String URL = "jdbc:sqlserver://localhost;instanceName=SQLEXPRESS;databaseName=QuizAppDB;encrypt=true;trustServerCertificate=true";
 
+    private static final String USER = "sa";
+    private static final String PASSWORD = "1";
 
     public static Connection getConnection() {
         Connection conn = null;
@@ -25,5 +22,31 @@ public class DBConnection {
             e.printStackTrace();
         }
         return conn;
+    }
+
+    public static int getOrCreateSubjectId(Connection conn, String subjectName) throws SQLException {
+        // Kiểm tra xem môn học đã tồn tại chưa
+        String checkSql = "SELECT SubjectID FROM Subjects WHERE SubjectName = ?";
+        try (java.sql.PreparedStatement pstmt = conn.prepareStatement(checkSql)) {
+            pstmt.setString(1, subjectName);
+            try (java.sql.ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("SubjectID");
+                }
+            }
+        }
+        
+        // Nếu chưa tồn tại, chèn môn học mới
+        String insertSql = "INSERT INTO Subjects (SubjectName) VALUES (?)";
+        try (java.sql.PreparedStatement pstmt = conn.prepareStatement(insertSql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
+            pstmt.setString(1, subjectName);
+            pstmt.executeUpdate();
+            try (java.sql.ResultSet rs = pstmt.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        }
+        throw new SQLException("Không thể lấy hoặc tạo SubjectID cho môn học: " + subjectName);
     }
 }

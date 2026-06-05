@@ -10,7 +10,7 @@ import java.util.List;
 public class S_DoQuestionPanel extends JPanel {
     private CardLayout cardLayout;
     private JPanel settingsPanel, quizPanel;
-    private JComboBox<String> cbSubject;
+    private JComboBox<SubjectItem> cbSubject;
     private JTextField txtCount;
     private JTextField txtTime;
     private User currentUser;
@@ -21,10 +21,25 @@ public class S_DoQuestionPanel extends JPanel {
     private int totalSeconds;
     private JLabel lblTimer;
     
-    // Lưu đáp án đúng của từng câu
-    private List<String> listCorrectAnswers = new ArrayList<>();
     // Lưu các Group button để chấm điểm
     private List<ButtonGroup> listBtnGroups = new ArrayList<>();
+    // Lưu ID câu hỏi và đáp án đúng để chấm
+    private List<QuestionAttemptData> questionDataList = new ArrayList<>();
+
+    private class SubjectItem {
+        int id;
+        String name;
+        public SubjectItem(int id, String name) { this.id = id; this.name = name; }
+        @Override public String toString() { return name; }
+    }
+
+    private class QuestionAttemptData {
+        int questionId;
+        String correctAnsOrig;
+        public QuestionAttemptData(int qId, String orig) {
+            questionId = qId; correctAnsOrig = orig;
+        }
+    }
 
     public S_DoQuestionPanel(User user) {
         this.currentUser = user;
@@ -42,9 +57,9 @@ public class S_DoQuestionPanel extends JPanel {
     public void refreshSubjects() {
         cbSubject.removeAllItems();
         try (Connection conn = DBConnection.getConnection()) {
-            ResultSet rs = conn.createStatement().executeQuery("SELECT DISTINCT Subject FROM Questions WHERE QuestionID NOT IN (SELECT QuestionID FROM ExamQuestions)");
+            ResultSet rs = conn.createStatement().executeQuery("SELECT SubjectID, SubjectName FROM Subjects");
             while (rs.next()) {
-                cbSubject.addItem(rs.getString("Subject"));
+                cbSubject.addItem(new SubjectItem(rs.getInt("SubjectID"), rs.getString("SubjectName")));
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -140,7 +155,7 @@ public class S_DoQuestionPanel extends JPanel {
 
     private void startQuiz() {
         if (cbSubject.getSelectedItem() == null) return;
-        String subject = (String) cbSubject.getSelectedItem();
+        SubjectItem subject = (SubjectItem) cbSubject.getSelectedItem();
         int count = 0;
         int time = 0;
         try {
@@ -156,21 +171,22 @@ public class S_DoQuestionPanel extends JPanel {
         totalSeconds = time * 60;
 
         questionsListPanel.removeAll();
-        listCorrectAnswers.clear();
+        questionDataList.clear();
         listBtnGroups.clear();
 
         try (Connection conn = DBConnection.getConnection()) {
             // Lấy ngẫu nhiên N câu hỏi Độc lập (Không nằm trong Exam)
-            String sql = "SELECT TOP (?) * FROM Questions WHERE Subject = ? AND QuestionID NOT IN (SELECT QuestionID FROM ExamQuestions) ORDER BY NEWID()";
+            String sql = "SELECT TOP (?) * FROM Questions WHERE SubjectID = ? AND QuestionID NOT IN (SELECT QuestionID FROM ExamQuestions) ORDER BY NEWID()";
             PreparedStatement ps = conn.prepareStatement(sql);
             ps.setInt(1, count);
-            ps.setString(2, subject);
+            ps.setInt(2, subject.id);
             ResultSet rs = ps.executeQuery();
 
             int qIndex = 1;
             boolean hasData = false;
             while (rs.next()) {
                 hasData = true;
+                int qId = rs.getInt("QuestionID");
                 JPanel qPanel = new JPanel(new BorderLayout(5, 5));
                 qPanel.setBackground(Color.WHITE);
                 qPanel.setBorder(BorderFactory.createCompoundBorder(
@@ -193,14 +209,7 @@ public class S_DoQuestionPanel extends JPanel {
                 answers.add(new AnswerItem("D", rs.getString("AnswerD")));
                 
                 String correctOrig = rs.getString("CorrectAnswer");
-                String correctText = "";
-                for (AnswerItem a : answers) {
-                    if (a.originalKey.equals(correctOrig)) {
-                        correctText = a.text;
-                        break;
-                    }
-                }
-                listCorrectAnswers.add(correctText); // Lưu text đáp án đúng để so sánh sau khi đảo
+                questionDataList.add(new QuestionAttemptData(qId, correctOrig));
 
                 Collections.shuffle(answers);
 
@@ -209,6 +218,7 @@ public class S_DoQuestionPanel extends JPanel {
                 ButtonGroup bg = new ButtonGroup();
                 for (int j = 0; j < 4; j++) {
                     JRadioButton rb = new JRadioButton(answers.get(j).text);
+                    rb.setActionCommand(answers.get(j).originalKey); // Lưu lại đáp án gốc A/B/C/D
                     rb.setFont(new Font("Arial", Font.PLAIN, 15));
                     rb.setOpaque(false);
                     bg.add(rb);
@@ -252,42 +262,73 @@ public class S_DoQuestionPanel extends JPanel {
 
         timer.stop();
         int correctCount = 0;
-        int totalCount = listCorrectAnswers.size();
+        int totalCount = questionDataList.size();
 
+        // Chấm điểm trước
         for (int i = 0; i < totalCount; i++) {
             ButtonGroup bg = listBtnGroups.get(i);
-            String correctAns = listCorrectAnswers.get(i);
-            String selectedAns = null;
-
-            java.util.Enumeration<AbstractButton> elements = bg.getElements();
-            while (elements.hasMoreElements()) {
-                AbstractButton button = elements.nextElement();
-                if (button.isSelected()) {
-                    selectedAns = button.getText();
-                    break;
-                }
-            }
+            String correctAns = questionDataList.get(i).correctAnsOrig;
+            String selectedAns = bg.getSelection() != null ? bg.getSelection().getActionCommand() : null;
 
             if (selectedAns != null && selectedAns.equals(correctAns)) {
                 correctCount++;
             }
         }
 
-        // Lưu vào CSDL PracticeHistory
+        // Lưu vào CSDL
         try (Connection conn = DBConnection.getConnection()) {
-            int timeTaken = totalSeconds - secondsRemaining;
-            String sql = "INSERT INTO PracticeHistory (StudentID, Subject, CorrectCount, TotalCount, DurationInSeconds) VALUES (?, ?, ?, ?, ?)";
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setInt(1, currentUser.getUserId());
-            ps.setString(2, (String) cbSubject.getSelectedItem());
-            ps.setInt(3, correctCount);
-            ps.setInt(4, totalCount);
-            ps.setInt(5, timeTaken);
-            ps.executeUpdate();
-            
-            JOptionPane.showMessageDialog(this, "Nộp bài thành công!\nKết quả: " + correctCount + " / " + totalCount + "\nThời gian: " + timeTaken + " giây.", "Kết Quả", JOptionPane.INFORMATION_MESSAGE);
-            cardLayout.show(this, "Settings");
+            conn.setAutoCommit(false);
+            try {
+                int timeTaken = totalSeconds - secondsRemaining;
+                SubjectItem subject = (SubjectItem) cbSubject.getSelectedItem();
+
+                // Lưu bảng QuizResults
+                String sqlRes = "INSERT INTO QuizResults (StudentID, ExamID, SubjectID, ResultType, CorrectCount, TotalCount, DurationInSeconds) VALUES (?, NULL, ?, 'PRACTICE', ?, ?, ?)";
+                PreparedStatement psRes = conn.prepareStatement(sqlRes, java.sql.Statement.RETURN_GENERATED_KEYS);
+                psRes.setInt(1, currentUser.getUserId());
+                psRes.setInt(2, subject.id);
+                psRes.setInt(3, correctCount);
+                psRes.setInt(4, totalCount);
+                psRes.setInt(5, timeTaken);
+                psRes.executeUpdate();
+
+                int resultId = 0;
+                try (ResultSet rsKeys = psRes.getGeneratedKeys()) {
+                    if (rsKeys.next()) {
+                        resultId = rsKeys.getInt(1);
+                    }
+                }
+
+                // Lưu bảng QuizAttemptDetails
+                String sqlDet = "INSERT INTO QuizAttemptDetails (ResultID, QuestionID, SelectedAnswer, IsCorrect) VALUES (?, ?, ?, ?)";
+                PreparedStatement psDet = conn.prepareStatement(sqlDet);
+                
+                for (int i = 0; i < totalCount; i++) {
+                    QuestionAttemptData qd = questionDataList.get(i);
+                    ButtonGroup bg = listBtnGroups.get(i);
+                    String selectedAns = bg.getSelection() != null ? bg.getSelection().getActionCommand() : null;
+                    boolean isCorrect = (selectedAns != null && selectedAns.equals(qd.correctAnsOrig));
+
+                    psDet.setInt(1, resultId);
+                    psDet.setInt(2, qd.questionId);
+                    if (selectedAns == null) {
+                        psDet.setNull(3, java.sql.Types.CHAR);
+                    } else {
+                        psDet.setString(3, selectedAns);
+                    }
+                    psDet.setBoolean(4, isCorrect);
+                    psDet.executeUpdate(); // Thực thi lưu trực tiếp thay vì addBatch
+                }
+
+                conn.commit();
+                JOptionPane.showMessageDialog(this, "Nộp bài thành công!\nKết quả: " + correctCount + " / " + totalCount + "\nThời gian: " + timeTaken + " giây.", "Kết Quả", JOptionPane.INFORMATION_MESSAGE);
+                cardLayout.show(this, "Settings");
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            }
         } catch (Exception ex) {
+            ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "Lỗi lưu lịch sử: " + ex.getMessage());
         }
     }

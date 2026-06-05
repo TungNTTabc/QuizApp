@@ -21,11 +21,20 @@ public class S_DoExamPanel extends JPanel {
     private int secondsRemaining;
     private JLabel lblTimer;
     private int currentExamId;
-    private String currentSubject;
+    private String currentSubjectName;
+    private int currentSubjectId;
     
     // Data for grading
-    private List<String> listCorrectAnswers = new ArrayList<>();
     private List<ButtonGroup> listBtnGroups = new ArrayList<>();
+    private List<QuestionAttemptData> questionDataList = new ArrayList<>();
+
+    private class QuestionAttemptData {
+        int questionId;
+        String correctAnsOrig;
+        public QuestionAttemptData(int qId, String orig) {
+            questionId = qId; correctAnsOrig = orig;
+        }
+    }
 
     public S_DoExamPanel(User user) {
         this.currentUser = user;
@@ -64,8 +73,8 @@ public class S_DoExamPanel extends JPanel {
         examsListPanel.removeAll();
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return;
-            // Hiển thị tất cả bài thi
-            String sql = "SELECT * FROM Exams";
+            // Hiển thị tất cả bài thi, JOIN với Subjects để lấy tên môn
+            String sql = "SELECT e.*, s.SubjectName FROM Exams e JOIN Subjects s ON e.SubjectID = s.SubjectID";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 
@@ -74,7 +83,8 @@ public class S_DoExamPanel extends JPanel {
                 hasExam = true;
                 int examId = rs.getInt("ExamID");
                 String title = rs.getString("Title");
-                String subject = rs.getString("Subject");
+                int subjectId = rs.getInt("SubjectID");
+                String subjectName = rs.getString("SubjectName");
                 int count = rs.getInt("QuestionCount");
                 int dur = rs.getInt("Duration");
                 
@@ -93,7 +103,7 @@ public class S_DoExamPanel extends JPanel {
                 JLabel lblExTitle = new JLabel("Bài thi: " + title);
                 lblExTitle.setFont(new Font("Arial", Font.BOLD, 18));
                 
-                JLabel lblDesc = new JLabel("Môn học: " + subject + "  -  " + count + " câu hỏi  -  " + dur + " phút");
+                JLabel lblDesc = new JLabel("Môn học: " + subjectName + "  -  " + count + " câu hỏi  -  " + dur + " phút");
                 lblDesc.setFont(new Font("Arial", Font.ITALIC, 14));
                 lblDesc.setForeground(Color.GRAY);
 
@@ -106,7 +116,7 @@ public class S_DoExamPanel extends JPanel {
                 JButton btnStart = new JButton("Làm Bài");
                 btnStart.setFont(new Font("Arial", Font.BOLD, 16));
                 btnStart.setBackground(new Color(95, 225, 235));
-                btnStart.addActionListener(e -> startExam(examId, subject, dur));
+                btnStart.addActionListener(e -> startExam(examId, subjectId, subjectName, dur));
 
                 itemPanel.add(btnStart, BorderLayout.EAST);
 
@@ -176,11 +186,12 @@ public class S_DoExamPanel extends JPanel {
         });
     }
 
-    private void startExam(int examId, String subject, int durationMinutes) {
+    private void startExam(int examId, int subjectId, String subjectName, int durationMinutes) {
         currentExamId = examId;
-        currentSubject = subject;
+        currentSubjectId = subjectId;
+        currentSubjectName = subjectName;
         questionsListPanel.removeAll();
-        listCorrectAnswers.clear();
+        questionDataList.clear();
         listBtnGroups.clear();
 
         try (Connection conn = DBConnection.getConnection()) {
@@ -191,6 +202,7 @@ public class S_DoExamPanel extends JPanel {
 
             int qIndex = 1;
             while (rs.next()) {
+                int qId = rs.getInt("QuestionID");
                 JPanel qPanel = new JPanel(new BorderLayout(5, 5));
                 qPanel.setBackground(Color.WHITE);
                 qPanel.setBorder(BorderFactory.createCompoundBorder(
@@ -213,14 +225,7 @@ public class S_DoExamPanel extends JPanel {
                 answers.add(new AnswerItem("D", rs.getString("AnswerD")));
                 
                 String correctOrig = rs.getString("CorrectAnswer");
-                String correctText = "";
-                for (AnswerItem a : answers) {
-                    if (a.originalKey.equals(correctOrig)) {
-                        correctText = a.text;
-                        break;
-                    }
-                }
-                listCorrectAnswers.add(correctText); 
+                questionDataList.add(new QuestionAttemptData(qId, correctOrig)); 
 
                 Collections.shuffle(answers);
 
@@ -229,6 +234,7 @@ public class S_DoExamPanel extends JPanel {
                 ButtonGroup bg = new ButtonGroup();
                 for (int j = 0; j < 4; j++) {
                     JRadioButton rb = new JRadioButton(answers.get(j).text);
+                    rb.setActionCommand(answers.get(j).originalKey); // Lưu key gốc
                     rb.setFont(new Font("Arial", Font.PLAIN, 15));
                     rb.setOpaque(false);
                     bg.add(rb);
@@ -260,12 +266,8 @@ public class S_DoExamPanel extends JPanel {
     private void submitExam() {
         timer.stop();
         int correctCount = 0;
-        int totalCount = listCorrectAnswers.size();
+        int totalCount = questionDataList.size();
         
-        // Thời gian đã làm = Tổng thời gian - Thời gian còn lại
-        // Tính toán lại tổng thời gian bằng cách query DB hoặc lấy từ secondsRemaining. Ta chỉ có secondsRemaining.
-        // Để chuẩn, ta nên lưu durationMinutes lúc bắt đầu. Nhưng ta có thể lấy qua ExamID.
-        // Tạm thời query lại.
         int totalSecs = 0;
         try(Connection conn = DBConnection.getConnection()){
             PreparedStatement ps = conn.prepareStatement("SELECT Duration FROM Exams WHERE ExamID = ?");
@@ -276,40 +278,70 @@ public class S_DoExamPanel extends JPanel {
         
         int timeTaken = totalSecs - secondsRemaining;
 
+        // Chấm điểm
         for (int i = 0; i < totalCount; i++) {
             ButtonGroup bg = listBtnGroups.get(i);
-            String correctAns = listCorrectAnswers.get(i);
-            String selectedAns = null;
-
-            java.util.Enumeration<AbstractButton> elements = bg.getElements();
-            while (elements.hasMoreElements()) {
-                AbstractButton button = elements.nextElement();
-                if (button.isSelected()) {
-                    selectedAns = button.getText();
-                    break;
-                }
-            }
+            String correctAns = questionDataList.get(i).correctAnsOrig;
+            String selectedAns = bg.getSelection() != null ? bg.getSelection().getActionCommand() : null;
 
             if (selectedAns != null && selectedAns.equals(correctAns)) {
                 correctCount++;
             }
         }
 
-        // Lưu vào CSDL ExamResults
+        // Lưu vào CSDL QuizResults
         try (Connection conn = DBConnection.getConnection()) {
-            String sql = "INSERT INTO ExamResults (ExamID, StudentID, CorrectCount, TotalCount, DurationInSeconds) VALUES (?, ?, ?, ?, ?)";
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setInt(1, currentExamId);
-            ps.setInt(2, currentUser.getUserId());
-            ps.setInt(3, correctCount);
-            ps.setInt(4, totalCount);
-            ps.setInt(5, timeTaken);
-            ps.executeUpdate();
-            
-            JOptionPane.showMessageDialog(this, "Hoàn thành bài thi!\nKết quả: " + correctCount + " / " + totalCount + "\nThời gian: " + timeTaken + " giây.", "Kết Quả", JOptionPane.INFORMATION_MESSAGE);
-            loadExams();
-            cardLayout.show(this, "List");
+            conn.setAutoCommit(false);
+            try {
+                String sqlRes = "INSERT INTO QuizResults (StudentID, ExamID, SubjectID, ResultType, CorrectCount, TotalCount, DurationInSeconds) VALUES (?, ?, ?, 'EXAM', ?, ?, ?)";
+                PreparedStatement psRes = conn.prepareStatement(sqlRes, java.sql.Statement.RETURN_GENERATED_KEYS);
+                psRes.setInt(1, currentUser.getUserId());
+                psRes.setInt(2, currentExamId);
+                psRes.setInt(3, currentSubjectId);
+                psRes.setInt(4, correctCount);
+                psRes.setInt(5, totalCount);
+                psRes.setInt(6, timeTaken);
+                psRes.executeUpdate();
+                
+                int resultId = 0;
+                try (ResultSet rsKeys = psRes.getGeneratedKeys()) {
+                    if (rsKeys.next()) {
+                        resultId = rsKeys.getInt(1);
+                    }
+                }
+                
+                // Lưu bảng QuizAttemptDetails
+                String sqlDet = "INSERT INTO QuizAttemptDetails (ResultID, QuestionID, SelectedAnswer, IsCorrect) VALUES (?, ?, ?, ?)";
+                PreparedStatement psDet = conn.prepareStatement(sqlDet);
+                
+                for (int i = 0; i < totalCount; i++) {
+                    QuestionAttemptData qd = questionDataList.get(i);
+                    ButtonGroup bg = listBtnGroups.get(i);
+                    String selectedAns = bg.getSelection() != null ? bg.getSelection().getActionCommand() : null;
+                    boolean isCorrect = (selectedAns != null && selectedAns.equals(qd.correctAnsOrig));
+
+                    psDet.setInt(1, resultId);
+                    psDet.setInt(2, qd.questionId);
+                    if (selectedAns == null) {
+                        psDet.setNull(3, java.sql.Types.CHAR);
+                    } else {
+                        psDet.setString(3, selectedAns);
+                    }
+                    psDet.setBoolean(4, isCorrect);
+                    psDet.executeUpdate(); // Thực thi lưu trực tiếp thay vì addBatch
+                }
+                
+                conn.commit();
+                
+                JOptionPane.showMessageDialog(this, "Hoàn thành bài thi!\nKết quả: " + correctCount + " / " + totalCount + "\nThời gian: " + timeTaken + " giây.", "Kết Quả", JOptionPane.INFORMATION_MESSAGE);
+                loadExams();
+                cardLayout.show(this, "List");
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            }
         } catch (Exception ex) {
+            ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "Lỗi nộp bài: " + ex.getMessage());
         }
     }

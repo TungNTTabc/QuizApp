@@ -110,24 +110,27 @@ public class LoginFrame extends JFrame {
                 return;
             }
 
-            String sql = "SELECT UserID, FullName FROM Users WHERE Role = ? AND Username = ? AND Password = ?";
+            String sql = "SELECT UserID, FullName, Password FROM Users WHERE Role = ? AND Username = ?";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, roleCode);
             pstmt.setString(2, username);
-            pstmt.setString(3, password);
             ResultSet rs = pstmt.executeQuery();
 
             if (rs.next()) {
-                User user = new User(rs.getInt("UserID"), roleCode, username, rs.getString("FullName"));
-                if (roleCode.equals("GV")) {
-                    new TeacherDashboard(user).setVisible(true);
+                String storedPasswordHash = rs.getString("Password");
+                if (PasswordHasher.checkPassword(password, storedPasswordHash)) {
+                    User user = new User(rs.getInt("UserID"), roleCode, username, rs.getString("FullName"));
+                    if (roleCode.equals("GV")) {
+                        new TeacherDashboard(user).setVisible(true);
+                    } else {
+                        new StudentDashboard(user).setVisible(true);
+                    }
+                    dispose();
                 } else {
-                    new StudentDashboard(user).setVisible(true);
+                    JOptionPane.showMessageDialog(this, "Sai tài khoản, mật khẩu hoặc vai trò!", "Thông báo", JOptionPane.ERROR_MESSAGE);
                 }
-                dispose();
             } else {
-                JOptionPane.showMessageDialog(this, "Sai tài khoản, mật khẩu hoặc vai trò!", "Thông báo",
-                        JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Sai tài khoản, mật khẩu hoặc vai trò!", "Thông báo", JOptionPane.ERROR_MESSAGE);
             }
         } catch (Exception ex) {
             ex.printStackTrace();

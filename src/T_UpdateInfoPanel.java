@@ -135,7 +135,7 @@ public class T_UpdateInfoPanel extends JPanel {
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 txtUsername.setText(rs.getString("Username"));
-                txtPassword.setText(rs.getString("Password"));
+                txtPassword.setText(""); // Không hiển thị mật khẩu băm
                 txtFullName.setText(rs.getString("FullName"));
                 txtMSSV.setText(rs.getString("StudentID") != null ? rs.getString("StudentID") : "");
                 
@@ -163,15 +163,10 @@ public class T_UpdateInfoPanel extends JPanel {
             try (Connection conn = DBConnection.getConnection()) {
                 conn.setAutoCommit(false);
                 try {
-                    // Xóa PracticeHistory nếu là học sinh (ở đây là GV nhưng cứ để cho an toàn nếu code dùng chung)
-                    PreparedStatement psHist = conn.prepareStatement("DELETE FROM PracticeHistory WHERE StudentID = ?");
+                    // Xóa QuizResults nếu là học sinh
+                    PreparedStatement psHist = conn.prepareStatement("DELETE FROM QuizResults WHERE StudentID = ?");
                     psHist.setInt(1, currentUser.getUserId());
                     psHist.executeUpdate();
-                    
-                    // Xóa kết quả bài thi của học sinh
-                    PreparedStatement psRes = conn.prepareStatement("DELETE FROM ExamResults WHERE StudentID = ?");
-                    psRes.setInt(1, currentUser.getUserId());
-                    psRes.executeUpdate();
 
                     // Tìm các Exam do GV này tạo
                     PreparedStatement psGetExams = conn.prepareStatement("SELECT ExamID FROM Exams WHERE TeacherID = ?");
@@ -180,18 +175,15 @@ public class T_UpdateInfoPanel extends JPanel {
                     
                     while (rsEx.next()) {
                         int examId = rsEx.getInt("ExamID");
-                        // Xóa ExamResults liên kết với bài thi này (do học sinh làm)
-                        PreparedStatement p2 = conn.prepareStatement("DELETE FROM ExamResults WHERE ExamID = ?");
+                        // Xóa QuizResults liên kết với bài thi này (do học sinh làm)
+                        PreparedStatement p2 = conn.prepareStatement("DELETE FROM QuizResults WHERE ExamID = ?");
                         p2.setInt(1, examId); p2.executeUpdate();
                         
                         // Xóa các câu hỏi trong bài thi
                         PreparedStatement pQ = conn.prepareStatement("DELETE FROM Questions WHERE QuestionID IN (SELECT QuestionID FROM ExamQuestions WHERE ExamID = ?)");
                         pQ.setInt(1, examId);
                         
-                        PreparedStatement pLink = conn.prepareStatement("DELETE FROM ExamQuestions WHERE ExamID = ?");
-                        pLink.setInt(1, examId);
-                        
-                        pLink.executeUpdate();
+                        // Note: Bảng ExamQuestions và QuizAttemptDetails sẽ tự động bị xóa do ON DELETE CASCADE
                         pQ.executeUpdate();
                     }
                     
@@ -295,10 +287,22 @@ public class T_UpdateInfoPanel extends JPanel {
         }
 
         try (Connection conn = DBConnection.getConnection()) {
+            String newPassword = new String(txtPassword.getPassword());
+            String finalPasswordHash;
+            if (newPassword.isEmpty()) {
+                PreparedStatement psOld = conn.prepareStatement("SELECT Password FROM Users WHERE UserID = ?");
+                psOld.setInt(1, currentUser.getUserId());
+                ResultSet rsOld = psOld.executeQuery();
+                rsOld.next();
+                finalPasswordHash = rsOld.getString("Password");
+            } else {
+                finalPasswordHash = PasswordHasher.hashPassword(newPassword);
+            }
+
             String sql = "UPDATE Users SET Username=?, Password=?, FullName=?, StudentID=?, DOB=?, Gender=?, ClassName=?, MainSubject=?, Phone=?, Email=?, Address=? WHERE UserID=?";
             PreparedStatement ps = conn.prepareStatement(sql);
             ps.setString(1, newUsername);
-            ps.setString(2, new String(txtPassword.getPassword()));
+            ps.setString(2, finalPasswordHash);
             ps.setString(3, newFullName);
             ps.setString(4, newMSSV);
             ps.setDate(5, sqlDob);

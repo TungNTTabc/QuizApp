@@ -53,7 +53,7 @@ public class T_ViewQuestionPanel extends JPanel {
             if (conn == null) return;
             // Chỉ lấy các câu hỏi ĐỘC LẬP (Không nằm trong bài thi nào) 
             // VÀ tìm kiếm theo cả Nội dung hoặc Môn học
-            String sql = "SELECT * FROM Questions WHERE (Content LIKE ? OR Subject LIKE ?) AND QuestionID NOT IN (SELECT QuestionID FROM ExamQuestions)";
+            String sql = "SELECT q.*, s.SubjectName FROM Questions q JOIN Subjects s ON q.SubjectID = s.SubjectID WHERE (q.Content LIKE ? OR s.SubjectName LIKE ?) AND q.QuestionID NOT IN (SELECT QuestionID FROM ExamQuestions)";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, "%" + keyword + "%");
             pstmt.setString(2, "%" + keyword + "%");
@@ -62,7 +62,7 @@ public class T_ViewQuestionPanel extends JPanel {
             while (rs.next()) {
                 int id = rs.getInt("QuestionID");
                 String content = rs.getString("Content");
-                String subject = rs.getString("Subject");
+                String subject = rs.getString("SubjectName");
                 
                 JPanel itemPanel = new JPanel(new BorderLayout(10, 0));
                 itemPanel.setBackground(Color.WHITE);
@@ -171,11 +171,11 @@ public class T_ViewQuestionPanel extends JPanel {
 
         // Load current data
         try (Connection conn = DBConnection.getConnection()) {
-            PreparedStatement ps = conn.prepareStatement("SELECT * FROM Questions WHERE QuestionID = ?");
+            PreparedStatement ps = conn.prepareStatement("SELECT q.*, s.SubjectName FROM Questions q JOIN Subjects s ON q.SubjectID = s.SubjectID WHERE q.QuestionID = ?");
             ps.setInt(1, id);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
-                txtSubject.setText(rs.getString("Subject"));
+                txtSubject.setText(rs.getString("SubjectName"));
                 txtQuestion.setText(rs.getString("Content"));
                 txtAnswers[0].setText(rs.getString("AnswerA"));
                 txtAnswers[1].setText(rs.getString("AnswerB"));
@@ -195,9 +195,10 @@ public class T_ViewQuestionPanel extends JPanel {
         btnUpdate.setBackground(new Color(95, 225, 235));
         btnUpdate.addActionListener(e -> {
             try (Connection conn = DBConnection.getConnection()) {
-                String sql = "UPDATE Questions SET Subject=?, Content=?, AnswerA=?, AnswerB=?, AnswerC=?, AnswerD=?, CorrectAnswer=? WHERE QuestionID=?";
+                int subjectId = DBConnection.getOrCreateSubjectId(conn, txtSubject.getText().trim());
+                String sql = "UPDATE Questions SET SubjectID=?, Content=?, AnswerA=?, AnswerB=?, AnswerC=?, AnswerD=?, CorrectAnswer=? WHERE QuestionID=?";
                 PreparedStatement ps = conn.prepareStatement(sql);
-                ps.setString(1, txtSubject.getText().trim());
+                ps.setInt(1, subjectId);
                 ps.setString(2, txtQuestion.getText().trim());
                 ps.setString(3, txtAnswers[0].getText().trim());
                 ps.setString(4, txtAnswers[1].getText().trim());

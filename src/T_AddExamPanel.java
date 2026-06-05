@@ -191,12 +191,14 @@ public class T_AddExamPanel extends JPanel {
         try (Connection conn = DBConnection.getConnection()) {
             conn.setAutoCommit(false); // Bắt đầu transaction
             try {
+                int subjectId = DBConnection.getOrCreateSubjectId(conn, txtSubject.getText().trim());
+
                 // 1. Thêm Bài thi
-                String sqlExam = "INSERT INTO Exams (TeacherID, Title, Subject, QuestionCount, Duration) VALUES (?, ?, ?, ?, ?)";
+                String sqlExam = "INSERT INTO Exams (TeacherID, Title, SubjectID, QuestionCount, Duration) VALUES (?, ?, ?, ?, ?)";
                 PreparedStatement psExam = conn.prepareStatement(sqlExam, Statement.RETURN_GENERATED_KEYS);
                 psExam.setInt(1, currentUser.getUserId());
                 psExam.setString(2, txtTitle.getText().trim());
-                psExam.setString(3, txtSubject.getText().trim());
+                psExam.setInt(3, subjectId);
                 psExam.setInt(4, listTxtQ.size());
                 psExam.setInt(5, Integer.parseInt(txtDuration.getText().trim()));
                 psExam.executeUpdate();
@@ -208,14 +210,14 @@ public class T_AddExamPanel extends JPanel {
                 }
 
                 // 2. Thêm từng Câu hỏi và liên kết vào ExamQuestions
-                String sqlQ = "INSERT INTO Questions (Subject, Content, AnswerA, AnswerB, AnswerC, AnswerD, CorrectAnswer) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                String sqlQ = "INSERT INTO Questions (SubjectID, Content, AnswerA, AnswerB, AnswerC, AnswerD, CorrectAnswer) VALUES (?, ?, ?, ?, ?, ?, ?)";
                 PreparedStatement psQ = conn.prepareStatement(sqlQ, Statement.RETURN_GENERATED_KEYS);
                 
                 String sqlLink = "INSERT INTO ExamQuestions (ExamID, QuestionID) VALUES (?, ?)";
                 PreparedStatement psLink = conn.prepareStatement(sqlLink);
 
                 for (int i = 0; i < listTxtQ.size(); i++) {
-                    psQ.setString(1, txtSubject.getText().trim());
+                    psQ.setInt(1, subjectId);
                     psQ.setString(2, listTxtQ.get(i).getText().trim());
                     psQ.setString(3, listTxtAns.get(i)[0].getText().trim());
                     psQ.setString(4, listTxtAns.get(i)[1].getText().trim());
@@ -235,10 +237,9 @@ public class T_AddExamPanel extends JPanel {
                         int qId = rsQ.getInt(1);
                         psLink.setInt(1, examId);
                         psLink.setInt(2, qId);
-                        psLink.addBatch();
+                        psLink.executeUpdate(); // Thực thi lưu luôn thay vì dùng addBatch
                     }
                 }
-                psLink.executeBatch();
                 conn.commit(); // Hoàn tất
                 JOptionPane.showMessageDialog(this, "Thêm bài thi và các câu hỏi thành công!");
                 

@@ -21,7 +21,7 @@ public class S_ViewHistoryPanel extends JPanel {
         lblTitle.setFont(new Font("Arial", Font.BOLD, 24));
         add(lblTitle, BorderLayout.NORTH);
 
-        String[] cols = {"Môn học", "Ngày làm", "Điểm số", "Thời gian (giây)"};
+        String[] cols = {"ID", "Môn học", "Ngày làm", "Điểm số", "Thời gian (giây)"};
         tableModel = new DefaultTableModel(cols, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -33,29 +33,60 @@ public class S_ViewHistoryPanel extends JPanel {
         table.setRowHeight(30);
         table.getTableHeader().setFont(new Font("Arial", Font.BOLD, 14));
         
+        // Ẩn cột ID
+        table.getColumnModel().getColumn(0).setMinWidth(0);
+        table.getColumnModel().getColumn(0).setMaxWidth(0);
+        table.getColumnModel().getColumn(0).setWidth(0);
+        table.getColumnModel().getColumn(0).setPreferredWidth(0);
+        
         JScrollPane scrollPane = new JScrollPane(table);
         add(scrollPane, BorderLayout.CENTER);
+
+        JButton btnViewDetails = new JButton("Xem chi tiết");
+        btnViewDetails.setFont(new Font("Arial", Font.BOLD, 16));
+        btnViewDetails.setBackground(new Color(95, 225, 235));
+        btnViewDetails.setFocusPainted(false);
+        btnViewDetails.addActionListener(e -> viewDetails());
+
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        bottomPanel.setOpaque(false);
+        bottomPanel.add(btnViewDetails);
+        add(bottomPanel, BorderLayout.SOUTH);
+    }
+
+    private void viewDetails() {
+        int row = table.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn một kết quả luyện tập để xem chi tiết!");
+            return;
+        }
+        int resultId = (int) tableModel.getValueAt(row, 0);
+        Window win = SwingUtilities.getWindowAncestor(this);
+        if (win instanceof JFrame) {
+            new AttemptDetailDialog((JFrame) win, resultId).setVisible(true);
+        }
     }
 
     public void loadData() {
         tableModel.setRowCount(0);
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return;
-            String sql = "SELECT * FROM PracticeHistory WHERE StudentID = ? ORDER BY DateTaken DESC";
+            String sql = "SELECT r.*, s.SubjectName FROM QuizResults r JOIN Subjects s ON r.SubjectID = s.SubjectID WHERE r.StudentID = ? AND r.ResultType = 'PRACTICE' ORDER BY r.DateTaken DESC";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, currentUser.getUserId());
             ResultSet rs = pstmt.executeQuery();
             
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
             while (rs.next()) {
-                String subject = rs.getString("Subject");
+                int id = rs.getInt("ResultID");
+                String subject = rs.getString("SubjectName");
                 String date = sdf.format(rs.getTimestamp("DateTaken"));
                 int correct = rs.getInt("CorrectCount");
                 int total = rs.getInt("TotalCount");
                 int dur = rs.getInt("DurationInSeconds");
                 
                 tableModel.addRow(new Object[]{
-                    subject, date, correct + " / " + total, dur
+                    id, subject, date, correct + " / " + total, dur
                 });
             }
         } catch (Exception ex) {

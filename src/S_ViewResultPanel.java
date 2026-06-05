@@ -36,13 +36,48 @@ public class S_ViewResultPanel extends JPanel {
         add(topPanel, BorderLayout.NORTH);
 
         // Bảng kết quả
-        tableModel = new DefaultTableModel(new String[]{"STT", "Họ và Tên", "Mã số", "Số câu đúng", "Thời gian (giây)"}, 0);
+        tableModel = new DefaultTableModel(new String[]{"ID", "STT", "Họ và Tên", "Mã số", "Số câu đúng", "Thời gian (giây)", "Ngày làm"}, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
         table = new JTable(tableModel);
         table.setRowHeight(30);
         table.setFont(new Font("Arial", Font.PLAIN, 14));
         
+        // Ẩn cột ID
+        table.getColumnModel().getColumn(0).setMinWidth(0);
+        table.getColumnModel().getColumn(0).setMaxWidth(0);
+        table.getColumnModel().getColumn(0).setWidth(0);
+        table.getColumnModel().getColumn(0).setPreferredWidth(0);
+        
         JScrollPane scroll = new JScrollPane(table);
         add(scroll, BorderLayout.CENTER);
+
+        JButton btnViewDetails = new JButton("Xem chi tiết");
+        btnViewDetails.setFont(new Font("Arial", Font.BOLD, 16));
+        btnViewDetails.setBackground(new Color(95, 225, 235));
+        btnViewDetails.setFocusPainted(false);
+        btnViewDetails.addActionListener(e -> viewDetails());
+
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        bottomPanel.setOpaque(false);
+        bottomPanel.add(btnViewDetails);
+        add(bottomPanel, BorderLayout.SOUTH);
+    }
+
+    private void viewDetails() {
+        int row = table.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn một kết quả để xem chi tiết!");
+            return;
+        }
+        int resultId = (int) tableModel.getValueAt(row, 0);
+        Window win = SwingUtilities.getWindowAncestor(this);
+        if (win instanceof JFrame) {
+            new AttemptDetailDialog((JFrame) win, resultId).setVisible(true);
+        }
     }
 
     private void loadExamsIntoCombo() {
@@ -69,25 +104,33 @@ public class S_ViewResultPanel extends JPanel {
         int examId = Integer.parseInt(selected.split(" - ")[0]);
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return;
-            String sql = "SELECT u.FullName, u.StudentID as MSSV, r.CorrectCount, r.TotalCount, r.DurationInSeconds " +
-                         "FROM ExamResults r " +
+            String sql = "SELECT r.ResultID, u.FullName, u.StudentID as MSSV, r.CorrectCount, r.TotalCount, r.DurationInSeconds, r.DateTaken " +
+                         "FROM QuizResults r " +
                          "JOIN Users u ON r.StudentID = u.UserID " +
-                         "WHERE r.ExamID = ? " +
+                         "WHERE r.ExamID = ? AND r.ResultType = 'EXAM' " +
                          "ORDER BY r.CorrectCount DESC, r.DurationInSeconds ASC";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, examId);
             ResultSet rs = pstmt.executeQuery();
             
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
             int stt = 1;
             while (rs.next()) {
+                int resultId = rs.getInt("ResultID");
                 String fullName = rs.getString("FullName");
                 String mssv = rs.getString("MSSV");
                 int correct = rs.getInt("CorrectCount");
                 int total = rs.getInt("TotalCount");
                 int dur = rs.getInt("DurationInSeconds");
                 
+                // Tính thời gian bắt đầu
+                long endTime = rs.getTimestamp("DateTaken").getTime();
+                long durationMillis = dur * 1000L;
+                long startTime = endTime - durationMillis;
+                String ngayLam = sdf.format(new java.util.Date(startTime));
+                
                 tableModel.addRow(new Object[]{
-                    stt++, fullName, mssv, correct + " / " + total, dur
+                    resultId, stt++, fullName, mssv, correct + " / " + total, dur, ngayLam
                 });
             }
         } catch (Exception ex) {

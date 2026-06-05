@@ -219,7 +219,7 @@ public class RegisterFrame extends JFrame {
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, roleCode);
             pstmt.setString(2, username);
-            pstmt.setString(3, password);
+            pstmt.setString(3, PasswordHasher.hashPassword(password));
             pstmt.setString(4, fullName);
             pstmt.setDate(5, sqlDob);
             pstmt.setString(6, gender);
