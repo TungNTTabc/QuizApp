@@ -11,6 +11,7 @@ public class S_ViewResultPanel extends JPanel {
     private JTable table;
     private DefaultTableModel tableModel;
     private User currentUser;
+    private JTextField txtSearch;
 
     public S_ViewResultPanel(User user) {
         this.currentUser = user;
@@ -21,11 +22,22 @@ public class S_ViewResultPanel extends JPanel {
         // Thanh chọn bài thi
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         topPanel.setOpaque(false);
-        topPanel.add(new JLabel("Chọn bài thi để xem: "));
+        
+        txtSearch = new JTextField(15);
+        txtSearch.setFont(new Font("Arial", Font.PLAIN, 14));
+        txtSearch.setToolTipText("Tìm tên bài thi hoặc môn học...");
+        
+        JButton btnSearchExam = new JButton("Tìm Đề");
+        btnSearchExam.addActionListener(e -> loadExamsIntoCombo(txtSearch.getText().trim()));
+        
+        topPanel.add(new JLabel("Lọc đề thi:"));
+        topPanel.add(txtSearch);
+        topPanel.add(btnSearchExam);
+        topPanel.add(new JLabel("  |  Chọn:"));
         
         cbExams = new JComboBox<>();
-        cbExams.setPreferredSize(new Dimension(400, 30));
-        loadExamsIntoCombo();
+        cbExams.setPreferredSize(new Dimension(300, 30));
+        loadExamsIntoCombo("");
         
         JButton btnView = new JButton("Xem Kết Quả");
         btnView.setBackground(new Color(95, 225, 235));
@@ -80,12 +92,14 @@ public class S_ViewResultPanel extends JPanel {
         }
     }
 
-    private void loadExamsIntoCombo() {
+    private void loadExamsIntoCombo(String keyword) {
         cbExams.removeAllItems();
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return;
-            String sql = "SELECT ExamID, Title FROM Exams";
+            String sql = "SELECT e.ExamID, e.Title FROM Exams e JOIN Subjects s ON e.SubjectID = s.SubjectID WHERE e.Title LIKE ? OR s.SubjectName LIKE ?";
             PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, "%" + keyword + "%");
+            pstmt.setString(2, "%" + keyword + "%");
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
                 int examId = rs.getInt("ExamID");
@@ -139,6 +153,6 @@ public class S_ViewResultPanel extends JPanel {
     }
 
     public void loadData() {
-        loadExamsIntoCombo();
+        loadExamsIntoCombo(txtSearch != null ? txtSearch.getText().trim() : "");
     }
 }

@@ -10,6 +10,7 @@ public class S_ViewHistoryPanel extends JPanel {
     private JTable table;
     private DefaultTableModel tableModel;
     private User currentUser;
+    private JTextField txtSearch;
 
     public S_ViewHistoryPanel(User user) {
         this.currentUser = user;
@@ -17,9 +18,25 @@ public class S_ViewHistoryPanel extends JPanel {
         setOpaque(false);
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
+        JPanel topPanel = new JPanel(new BorderLayout(10, 0));
+        topPanel.setOpaque(false);
+        
         JLabel lblTitle = new JLabel("Lịch Sử Luyện Tập (Làm Câu Hỏi)");
         lblTitle.setFont(new Font("Arial", Font.BOLD, 24));
-        add(lblTitle, BorderLayout.NORTH);
+        topPanel.add(lblTitle, BorderLayout.NORTH);
+
+        JPanel searchPanel = new JPanel(new BorderLayout(5, 0));
+        searchPanel.setOpaque(false);
+        txtSearch = new JTextField();
+        txtSearch.setFont(new Font("Arial", Font.PLAIN, 16));
+        txtSearch.setBorder(BorderFactory.createTitledBorder("Tìm kiếm theo môn học:"));
+        JButton btnSearch = new JButton("Tìm");
+        btnSearch.addActionListener(e -> loadData(txtSearch.getText().trim()));
+        searchPanel.add(txtSearch, BorderLayout.CENTER);
+        searchPanel.add(btnSearch, BorderLayout.EAST);
+        
+        topPanel.add(searchPanel, BorderLayout.SOUTH);
+        add(topPanel, BorderLayout.NORTH);
 
         String[] cols = {"ID", "Môn học", "Ngày làm", "Điểm số", "Thời gian (giây)"};
         tableModel = new DefaultTableModel(cols, 0) {
@@ -67,13 +84,14 @@ public class S_ViewHistoryPanel extends JPanel {
         }
     }
 
-    public void loadData() {
+    public void loadData(String keyword) {
         tableModel.setRowCount(0);
         try (Connection conn = DBConnection.getConnection()) {
             if (conn == null) return;
-            String sql = "SELECT r.*, s.SubjectName FROM QuizResults r JOIN Subjects s ON r.SubjectID = s.SubjectID WHERE r.StudentID = ? AND r.ResultType = 'PRACTICE' ORDER BY r.DateTaken DESC";
+            String sql = "SELECT r.*, s.SubjectName FROM QuizResults r JOIN Subjects s ON r.SubjectID = s.SubjectID WHERE r.StudentID = ? AND r.ResultType = 'PRACTICE' AND s.SubjectName LIKE ? ORDER BY r.DateTaken DESC";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, currentUser.getUserId());
+            pstmt.setString(2, "%" + keyword + "%");
             ResultSet rs = pstmt.executeQuery();
             
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");

@@ -138,7 +138,10 @@ public class TeacherDashboard extends JFrame {
                 cardLayout.show(contentPanel, "ViewExam");
             });
 
-            btnViewResult.addActionListener(e -> cardLayout.show(contentPanel, "ViewResult"));
+            btnViewResult.addActionListener(e -> {
+                viewResultPanel.loadData();
+                cardLayout.show(contentPanel, "ViewResult");
+            });
 
             btnUpdateInfo.addActionListener(e -> cardLayout.show(contentPanel, "UpdateInfo"));
 

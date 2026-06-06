@@ -11,6 +11,7 @@ public class T_ViewResultPanel extends JPanel {
     private JTable table;
     private DefaultTableModel tableModel;
     private User currentUser;
+    private JTextField txtSearch;
 
     public T_ViewResultPanel(User user) {
         this.currentUser = user;
@@ -21,17 +22,23 @@ public class T_ViewResultPanel extends JPanel {
         // Thanh chọn bài thi
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         topPanel.setOpaque(false);
-        topPanel.add(new JLabel("Chọn bài thi để xem: "));
+        topPanel.add(new JLabel("Chọn bài thi: "));
         
         cbExams = new JComboBox<>();
-        cbExams.setPreferredSize(new Dimension(400, 30));
+        cbExams.setPreferredSize(new Dimension(300, 30));
         loadExamsIntoCombo();
+        
+        topPanel.add(cbExams);
+        
+        topPanel.add(new JLabel(" | Lọc Học sinh/MSSV:"));
+        txtSearch = new JTextField(12);
+        txtSearch.setFont(new Font("Arial", Font.PLAIN, 14));
+        topPanel.add(txtSearch);
         
         JButton btnView = new JButton("Xem Kết Quả");
         btnView.setBackground(new Color(95, 225, 235));
-        btnView.addActionListener(e -> loadResults());
+        btnView.addActionListener(e -> loadResults(txtSearch.getText().trim()));
 
-        topPanel.add(cbExams);
         topPanel.add(btnView);
         add(topPanel, BorderLayout.NORTH);
 
@@ -96,7 +103,7 @@ public class T_ViewResultPanel extends JPanel {
         }
     }
 
-    private void loadResults() {
+    private void loadResults(String keyword) {
         if (cbExams.getSelectedItem() == null) return;
         String selected = (String) cbExams.getSelectedItem();
         int examId = Integer.parseInt(selected.split(" - ")[0]);
@@ -109,9 +116,12 @@ public class T_ViewResultPanel extends JPanel {
                          "FROM QuizResults r " +
                          "JOIN Users u ON r.StudentID = u.UserID " +
                          "WHERE r.ExamID = ? AND r.ResultType = 'EXAM' " +
+                         "AND (u.FullName LIKE ? OR u.StudentID LIKE ?) " +
                          "ORDER BY r.CorrectCount DESC, r.DurationInSeconds ASC";
             PreparedStatement ps = conn.prepareStatement(sql);
             ps.setInt(1, examId);
+            ps.setString(2, "%" + keyword + "%");
+            ps.setString(3, "%" + keyword + "%");
             ResultSet rs = ps.executeQuery();
 
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
@@ -138,5 +148,10 @@ public class T_ViewResultPanel extends JPanel {
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage());
         }
+    }
+
+    public void loadData() {
+        loadExamsIntoCombo();
+        tableModel.setRowCount(0);
     }
 }

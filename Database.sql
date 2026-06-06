@@ -120,13 +120,13 @@ CREATE NONCLUSTERED INDEX IX_QuizAttemptDetails_ResultID ON QuizAttemptDetails(R
 GO
 
 -- Chèn sẵn 1 tài khoản Giáo Viên để bạn có thể Đăng nhập ngay lập tức kiểm tra
--- Mật khẩu băm của 'admin'
+-- Mật khẩu Plain Text
 INSERT INTO Users (Role, Username, Password, FullName, DOB, Gender, StudentID, ClassName, MainSubject, Phone, Email, Address)
-VALUES ('GV', 'admin', 'wTjK0/et1vMCsGBqR7Jd6w==:0iYkU0PHNPnC3Y04vljrspzLnhtpRGIQ/e0At6HHe9o=', N'Giáo viên Admin', '1990-01-01', N'Nam', '0', N'Không', N'Toán', '0123456789', 'admin@quiz.com', N'Hà Nội');
+VALUES ('GV', 'admin', 'admin', N'Giáo viên Admin', '1990-01-01', N'Nam', '0', N'Không', N'Toán', '0123456789', 'admin@quiz.com', N'Hà Nội');
 GO
 
 -- Chèn sẵn 1 tài khoản Học Sinh để test
--- Mật khẩu băm của '123456'
+-- Mật khẩu Plain Text
 INSERT INTO Users (Role, Username, Password, FullName, DOB, Gender, StudentID, ClassName, MainSubject, Phone, Email, Address)
-VALUES ('HS', 'student1', 'S40hBP08UaFXvoquc+8azg==:50Wut7xhtyhlBMaBK7KiZRiTAFAaFkqdXGwoEQQJfes=', N'Học sinh Test', '2005-05-05', N'Nữ', 'SV001', N'Lớp 10A1', N'Toán', '0987654321', 'hs@quiz.com', N'Hà Nội');
+VALUES ('HS', 'student1', '123456', N'Học sinh Test', '2005-05-05', N'Nữ', 'SV001', N'Lớp 10A1', N'Toán', '0987654321', 'hs@quiz.com', N'Hà Nội');
 GO

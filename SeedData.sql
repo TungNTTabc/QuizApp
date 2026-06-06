@@ -175,3 +175,77 @@ BEGIN
     INSERT INTO QuizAttemptDetails (ResultID, QuestionID, SelectedAnswer, IsCorrect) VALUES (@ExamResultID, @Q5, 'A', 0);
 END
 GO
+
+-- ==========================================
+-- DỮ LIỆU BỔ SUNG ĐỂ TEST TÌM KIẾM
+-- ==========================================
+
+-- 1. Thêm thêm một vài User Học sinh
+IF NOT EXISTS (SELECT 1 FROM Users WHERE Username = 'student2')
+BEGIN
+    INSERT INTO Users (Role, Username, Password, FullName, DOB, Gender, StudentID, ClassName, MainSubject, Phone, Email, Address)
+    VALUES ('HS', 'student2', '123456', N'Nguyễn Văn An', '2005-01-01', N'Nam', 'SV002', N'Lớp 10A1', N'Toán', '0987654322', 'sv2@quiz.com', N'Hà Nội'),
+           ('HS', 'student3', '123456', N'Trần Thị Bình', '2005-02-02', N'Nữ', 'SV003', N'Lớp 10A2', N'Lý', '0987654323', 'sv3@quiz.com', N'Hà Nội');
+END
+GO
+
+DECLARE @StudentID1 INT = (SELECT UserID FROM Users WHERE Username = 'student1');
+DECLARE @StudentID2 INT = (SELECT UserID FROM Users WHERE Username = 'student2');
+DECLARE @StudentID3 INT = (SELECT UserID FROM Users WHERE Username = 'student3');
+
+DECLARE @ToanID INT = (SELECT SubjectID FROM Subjects WHERE SubjectName = N'Toán');
+DECLARE @LyID INT = (SELECT SubjectID FROM Subjects WHERE SubjectName = N'Vật lý');
+DECLARE @AnhID INT = (SELECT SubjectID FROM Subjects WHERE SubjectName = N'Tiếng Anh');
+DECLARE @CodeID INT = (SELECT SubjectID FROM Subjects WHERE SubjectName = N'Lập trình');
+
+DECLARE @ExamToan INT = (SELECT ExamID FROM Exams WHERE Title = N'Bài Kiểm tra Toán Học kì 1');
+DECLARE @ExamAnh INT = (SELECT ExamID FROM Exams WHERE Title = N'Kiểm tra Tiếng Anh 15 phút');
+DECLARE @ExamCode INT = (SELECT ExamID FROM Exams WHERE Title = N'Đề thi thử Lập trình cơ bản');
+
+-- 2. Thêm nhiều Lịch sử luyện tập cho student1 (để test ô tìm kiếm Môn học)
+IF @StudentID1 IS NOT NULL
+BEGIN
+    -- Luyện tập môn Lý
+    INSERT INTO QuizResults (StudentID, ExamID, SubjectID, ResultType, CorrectCount, TotalCount, DurationInSeconds, DateTaken)
+    VALUES (@StudentID1, NULL, @LyID, 'PRACTICE', 3, 5, 200, DATEADD(day, -1, GETDATE()));
+    
+    -- Luyện tập môn Tiếng Anh
+    INSERT INTO QuizResults (StudentID, ExamID, SubjectID, ResultType, CorrectCount, TotalCount, DurationInSeconds, DateTaken)
+    VALUES (@StudentID1, NULL, @AnhID, 'PRACTICE', 5, 5, 150, DATEADD(day, -2, GETDATE()));
+    
+    -- Luyện tập môn Lập trình
+    INSERT INTO QuizResults (StudentID, ExamID, SubjectID, ResultType, CorrectCount, TotalCount, DurationInSeconds, DateTaken)
+    VALUES (@StudentID1, NULL, @CodeID, 'PRACTICE', 4, 5, 300, DATEADD(day, -3, GETDATE()));
+    
+    -- Thi thử Bài Tiếng Anh
+    INSERT INTO QuizResults (StudentID, ExamID, SubjectID, ResultType, CorrectCount, TotalCount, DurationInSeconds, DateTaken)
+    VALUES (@StudentID1, @ExamAnh, @AnhID, 'EXAM', 4, 5, 600, DATEADD(day, -1, GETDATE()));
+    
+    -- Thi thử Bài Lập trình
+    INSERT INTO QuizResults (StudentID, ExamID, SubjectID, ResultType, CorrectCount, TotalCount, DurationInSeconds, DateTaken)
+    VALUES (@StudentID1, @ExamCode, @CodeID, 'EXAM', 5, 5, 1200, DATEADD(day, -2, GETDATE()));
+END
+
+-- 3. Thêm Kết quả thi của student2 và student3 (để test ô lọc tên Học sinh của Giáo viên)
+IF @StudentID2 IS NOT NULL
+BEGIN
+    -- student2 thi bài Toán, điểm cao hơn student1
+    INSERT INTO QuizResults (StudentID, ExamID, SubjectID, ResultType, CorrectCount, TotalCount, DurationInSeconds, DateTaken)
+    VALUES (@StudentID2, @ExamToan, @ToanID, 'EXAM', 5, 5, 250, GETDATE());
+    
+    -- student2 thi bài Tiếng Anh
+    INSERT INTO QuizResults (StudentID, ExamID, SubjectID, ResultType, CorrectCount, TotalCount, DurationInSeconds, DateTaken)
+    VALUES (@StudentID2, @ExamAnh, @AnhID, 'EXAM', 3, 5, 500, GETDATE());
+END
+
+IF @StudentID3 IS NOT NULL
+BEGIN
+    -- student3 thi bài Toán, điểm thấp hơn student1
+    INSERT INTO QuizResults (StudentID, ExamID, SubjectID, ResultType, CorrectCount, TotalCount, DurationInSeconds, DateTaken)
+    VALUES (@StudentID3, @ExamToan, @ToanID, 'EXAM', 2, 5, 400, GETDATE());
+    
+    -- student3 thi bài Lập trình
+    INSERT INTO QuizResults (StudentID, ExamID, SubjectID, ResultType, CorrectCount, TotalCount, DurationInSeconds, DateTaken)
+    VALUES (@StudentID3, @ExamCode, @CodeID, 'EXAM', 4, 5, 900, GETDATE());
+END
+GO

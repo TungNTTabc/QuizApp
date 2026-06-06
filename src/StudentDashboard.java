@@ -77,7 +77,7 @@ public class StudentDashboard extends JFrame {
         });
 
         btnViewHistory.addActionListener(e -> {
-            viewHistoryPanel.loadData();
+            viewHistoryPanel.loadData("");
             cardLayout.show(contentPanel, "ViewHistory");
         });
 
