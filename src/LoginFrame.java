@@ -110,22 +110,34 @@ public class LoginFrame extends JFrame {
                 return;
             }
 
-            String sql = "SELECT UserID, FullName, Password FROM Users WHERE Role = ? AND Username = ?";
+            String sql = "SELECT UserID, Role, FullName, Password FROM Users WHERE Username = ?";
             PreparedStatement pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, roleCode);
-            pstmt.setString(2, username);
+            pstmt.setString(1, username);
             ResultSet rs = pstmt.executeQuery();
 
             if (rs.next()) {
                 String storedPasswordHash = rs.getString("Password");
+                String dbRole = rs.getString("Role");
                 if (PasswordHasher.checkPassword(password, storedPasswordHash)) {
-                    User user = new User(rs.getInt("UserID"), roleCode, username, rs.getString("FullName"));
-                    if (roleCode.equals("GV")) {
-                        new TeacherDashboard(user).setVisible(true);
-                    } else {
-                        new StudentDashboard(user).setVisible(true);
+                    // Xác định tính hợp lệ của vai trò đăng nhập
+                    boolean roleMatches = false;
+                    if (roleCode.equals("HS") && dbRole.equals("HS")) {
+                        roleMatches = true;
+                    } else if (roleCode.equals("GV") && (dbRole.equals("GV") || dbRole.equals("ADMIN"))) {
+                        roleMatches = true;
                     }
-                    dispose();
+
+                    if (roleMatches) {
+                        User user = new User(rs.getInt("UserID"), dbRole, username, rs.getString("FullName"));
+                        if (dbRole.equals("ADMIN") || dbRole.equals("GV")) {
+                            new TeacherDashboard(user).setVisible(true);
+                        } else {
+                            new StudentDashboard(user).setVisible(true);
+                        }
+                        dispose();
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Sai tài khoản, mật khẩu hoặc vai trò!", "Thông báo", JOptionPane.ERROR_MESSAGE);
+                    }
                 } else {
                     JOptionPane.showMessageDialog(this, "Sai tài khoản, mật khẩu hoặc vai trò!", "Thông báo", JOptionPane.ERROR_MESSAGE);
                 }
