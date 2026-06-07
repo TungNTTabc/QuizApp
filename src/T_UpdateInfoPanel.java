@@ -59,7 +59,11 @@ public class T_UpdateInfoPanel extends JPanel {
         row1.setMaximumSize(new Dimension(800, 50));
         
         JTextField txtRole = createField("Vai trò:");
-        txtRole.setText(user.getRole().equals("GV") ? "Giáo viên" : "Học sinh");
+        if (user.getRole().equals("ADMIN")) {
+            txtRole.setText("Admin");
+        } else {
+            txtRole.setText(user.getRole().equals("GV") ? "Giáo viên" : "Học sinh");
+        }
         txtRole.setEditable(false);
         row1.add(txtRole);
 
@@ -234,7 +238,7 @@ public class T_UpdateInfoPanel extends JPanel {
         String isTeacher = currentUser.getRole().equals("GV") ? "GV" : "HS";
         
         // Ràng buộc Mã số cho Admin và người dùng khác
-        if (currentUser.getUsername().equals("admin")) {
+        if (currentUser.getRole().equals("ADMIN")) {
             if (!newMSSV.equals("0")) {
                 JOptionPane.showMessageDialog(this, "Mã số của Admin bắt buộc phải là 0!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
                 return;

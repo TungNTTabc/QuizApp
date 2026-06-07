@@ -119,10 +119,10 @@ CREATE NONCLUSTERED INDEX IX_QuizResults_ExamID ON QuizResults(ExamID);
 CREATE NONCLUSTERED INDEX IX_QuizAttemptDetails_ResultID ON QuizAttemptDetails(ResultID);
 GO
 
--- Chèn sẵn 1 tài khoản Giáo Viên để bạn có thể Đăng nhập ngay lập tức kiểm tra
+-- Chèn sẵn 1 tài khoản Admin để đăng nhập và quản lý hệ thống
 -- Mật khẩu Plain Text
 INSERT INTO Users (Role, Username, Password, FullName, DOB, Gender, StudentID, ClassName, MainSubject, Phone, Email, Address)
-VALUES ('GV', 'admin', 'admin', N'Giáo viên Admin', '1990-01-01', N'Nam', '0', N'Không', N'Toán', '0123456789', 'admin@quiz.com', N'Hà Nội');
+VALUES ('ADMIN', 'admin', 'admin', N'Admin Hệ Thống', '1990-01-01', N'Nam', '0', N'Không', N'Toán', '0123456789', 'admin@quiz.com', N'Hà Nội');
 GO
 
 -- Chèn sẵn 1 tài khoản Học Sinh để test

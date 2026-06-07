@@ -10,7 +10,7 @@ public class TeacherDashboard extends JFrame {
 
     public TeacherDashboard(User user) {
         this.currentUser = user;
-        boolean isAdmin = user.getUsername().equals("admin");
+        boolean isAdmin = user.getRole().equals("ADMIN");
         setTitle(isAdmin ? "Admin: " + user.getFullName() : "Giáo viên: " + user.getFullName());
         setSize(1000, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

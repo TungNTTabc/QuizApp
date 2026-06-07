@@ -15,6 +15,11 @@ if "%JDKBIN%"=="" (
   if defined JAVA_HOME if exist "%JAVA_HOME%\bin\javac.exe" set "JDKBIN=%JAVA_HOME%\bin"
 )
 if "%JDKBIN%"=="" (
+  for /d %%D in ("C:\Program Files\Java\jdk-*") do (
+    if exist "%%D\bin\javac.exe" set "JDKBIN=%%~fD\bin"
+  )
+)
+if "%JDKBIN%"=="" (
   set "JDKBIN=javac"
 )
 
