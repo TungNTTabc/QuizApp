@@ -189,13 +189,19 @@ public class A_ManageQuestionsPanel extends JPanel {
             try (Connection conn = DBConnection.getConnection()) {
                 conn.setAutoCommit(false);
                 try {
-                    // Xóa liên kết trong ExamQuestions nếu có
+                    // 1. Xóa các bản ghi tham chiếu trong QuizAttemptDetails (Nếu có)
+                    try (PreparedStatement ps = conn.prepareStatement("DELETE FROM QuizAttemptDetails WHERE QuestionID = ?")) {
+                        ps.setInt(1, id);
+                        ps.executeUpdate();
+                    }
+                    
+                    // 2. Xóa liên kết trong ExamQuestions nếu có
                     try (PreparedStatement ps = conn.prepareStatement("DELETE FROM ExamQuestions WHERE QuestionID = ?")) {
                         ps.setInt(1, id);
                         ps.executeUpdate();
                     }
                     
-                    // Xóa câu hỏi trong Questions
+                    // 3. Xóa câu hỏi trong Questions
                     try (PreparedStatement ps = conn.prepareStatement("DELETE FROM Questions WHERE QuestionID = ?")) {
                         ps.setInt(1, id);
                         ps.executeUpdate();

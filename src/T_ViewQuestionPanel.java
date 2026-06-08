@@ -118,12 +118,35 @@ public class T_ViewQuestionPanel extends JPanel {
         int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc chắn muốn xóa câu hỏi này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
             try (Connection conn = DBConnection.getConnection()) {
-                PreparedStatement pstmt = conn.prepareStatement("DELETE FROM Questions WHERE QuestionID = ?");
-                pstmt.setInt(1, id);
-                pstmt.executeUpdate();
-                JOptionPane.showMessageDialog(this, "Xóa thành công!");
-                loadQuestions(txtSearch.getText().trim());
+                conn.setAutoCommit(false);
+                try {
+                    // 1. Xóa các bản ghi tham chiếu trong QuizAttemptDetails (Nếu có)
+                    try (PreparedStatement ps = conn.prepareStatement("DELETE FROM QuizAttemptDetails WHERE QuestionID = ?")) {
+                        ps.setInt(1, id);
+                        ps.executeUpdate();
+                    }
+                    
+                    // 2. Xóa các bản ghi tham chiếu trong ExamQuestions (Nếu có)
+                    try (PreparedStatement ps = conn.prepareStatement("DELETE FROM ExamQuestions WHERE QuestionID = ?")) {
+                        ps.setInt(1, id);
+                        ps.executeUpdate();
+                    }
+                    
+                    // 3. Xóa câu hỏi chính
+                    try (PreparedStatement ps = conn.prepareStatement("DELETE FROM Questions WHERE QuestionID = ?")) {
+                        ps.setInt(1, id);
+                        ps.executeUpdate();
+                    }
+                    
+                    conn.commit();
+                    JOptionPane.showMessageDialog(this, "Xóa thành công!");
+                    loadQuestions(txtSearch.getText().trim());
+                } catch (Exception ex) {
+                    conn.rollback();
+                    throw ex;
+                }
             } catch (Exception ex) {
+                ex.printStackTrace();
                 JOptionPane.showMessageDialog(this, "Lỗi xóa: " + ex.getMessage());
             }
         }
