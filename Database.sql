@@ -110,6 +110,7 @@ CREATE TABLE StudentNotes (
 GO
 
 -- TẠO CÁC CHỈ MỤC (INDEXES) ĐỂ TỐI ƯU HÓA TRUY VẤN
+CREATE UNIQUE NONCLUSTERED INDEX UQ_Users_StudentID ON Users(StudentID) WHERE StudentID IS NOT NULL;
 CREATE NONCLUSTERED INDEX IX_Users_Username ON Users(Username);
 CREATE NONCLUSTERED INDEX IX_Questions_SubjectID ON Questions(SubjectID);
 CREATE NONCLUSTERED INDEX IX_Exams_TeacherID ON Exams(TeacherID);

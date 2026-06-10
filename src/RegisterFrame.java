@@ -74,6 +74,22 @@ public class RegisterFrame extends JFrame {
         genderCombo.setBorder(BorderFactory.createTitledBorder("Giới tính:"));
         styleField(genderCombo);
         row1.add(genderCombo);
+
+        // Lắng nghe sự kiện để tắt/bật ô nhập liệu tùy theo vai trò
+        roleCombo.addItemListener(e -> {
+            if (roleCombo.getSelectedItem().equals("Giáo viên")) {
+                txtMSSV.setEnabled(false);
+                txtMSSV.setText("");
+                txtClass.setEnabled(false);
+                txtClass.setText("");
+                txtSubject.setEnabled(true);
+            } else {
+                txtMSSV.setEnabled(true);
+                txtClass.setEnabled(true);
+                txtSubject.setEnabled(false);
+                txtSubject.setText("");
+            }
+        });
         
         rightPanel.add(row1); rightPanel.add(Box.createVerticalStrut(15));
 
@@ -82,7 +98,7 @@ public class RegisterFrame extends JFrame {
         row2.setOpaque(false);
         row2.setMaximumSize(new Dimension(800, 50)); // Cố định chiều cao
         
-        txtMSSV = createField("Mã số:");
+        txtMSSV = createField("Mã số sinh viên:");
         row2.add(txtMSSV);
         txtDob = createField("dd/mm/yyyy (ngày sinh) (VD:1/1/2001):");
         row2.add(txtDob);
@@ -132,6 +148,9 @@ public class RegisterFrame extends JFrame {
         bottomPanel.add(btnRegister);
         mainPanel.add(bottomPanel, BorderLayout.SOUTH);
 
+        // Khởi tạo trạng thái ban đầu (Mặc định là Học sinh)
+        txtSubject.setEnabled(false);
+
         add(mainPanel);
     }
 
@@ -163,14 +182,29 @@ public class RegisterFrame extends JFrame {
         String email = txtEmail.getText().trim();
         String address = txtAddress.getText().trim();
 
-        if (username.isEmpty() || password.isEmpty() || fullName.isEmpty() || dobStr.isEmpty() || mssv.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Tài khoản, mật khẩu, họ tên, ngày sinh và Mã số không được để trống!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+        if (username.isEmpty() || password.isEmpty() || fullName.isEmpty() || dobStr.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Tài khoản, mật khẩu, họ tên và ngày sinh không được để trống!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        if (mssv.equals("0")) {
-            JOptionPane.showMessageDialog(this, "Mã số không được là 0 (đây là mã riêng của Admin)!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
-            return;
+        // Logic xử lý Null cho từng Role
+        if (roleCode.equals("GV")) {
+            mssv = null;
+            className = null;
+            if (subject.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Giáo viên bắt buộc phải nhập Môn chính!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        } else {
+            subject = null;
+            if (mssv.isEmpty() || className.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Học sinh bắt buộc phải nhập Mã số và Lớp!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            if (mssv.equals("0")) {
+                JOptionPane.showMessageDialog(this, "Mã số không được là 0 (đây là mã riêng của Admin)!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
         }
 
         java.sql.Date sqlDob = null;
@@ -188,12 +222,12 @@ public class RegisterFrame extends JFrame {
                 return;
             }
 
-            // Kiểm tra trùng lặp Tài khoản, Họ Tên, Mã số
-            String checkSql = "SELECT Username, FullName, StudentID FROM Users WHERE Username = ? OR FullName = ? OR (StudentID = ? AND StudentID != '0')";
+            // Kiểm tra trùng lặp Tài khoản, Họ Tên, Mã số (Chỉ check mssv nếu nó khác null)
+            String checkSql = "SELECT Username, FullName, StudentID FROM Users WHERE Username = ? OR FullName = ? OR (StudentID = ? AND StudentID IS NOT NULL AND StudentID != '0')";
             PreparedStatement psCheck = conn.prepareStatement(checkSql);
             psCheck.setString(1, username);
             psCheck.setString(2, fullName);
-            psCheck.setString(3, mssv);
+            psCheck.setString(3, mssv != null ? mssv : "");
             java.sql.ResultSet rsCheck = psCheck.executeQuery();
             
             while (rsCheck.next()) {
@@ -209,8 +243,8 @@ public class RegisterFrame extends JFrame {
                     JOptionPane.showMessageDialog(this, "Họ và Tên này đã có người sử dụng! (Không được trùng tên giữa Học sinh và Giáo viên). Vui lòng thêm chữ đệm để phân biệt.", "Lỗi trùng lặp", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
-                if (mssv.equalsIgnoreCase(existMssv) && !mssv.equals("0")) {
-                    JOptionPane.showMessageDialog(this, "Mã số này đã tồn tại! Mỗi người dùng phải có một Mã số riêng biệt.", "Lỗi trùng lặp", JOptionPane.ERROR_MESSAGE);
+                if (mssv != null && mssv.equalsIgnoreCase(existMssv) && !mssv.equals("0")) {
+                    JOptionPane.showMessageDialog(this, "Mã số này đã tồn tại! Mỗi Học sinh phải có một Mã số riêng biệt.", "Lỗi trùng lặp", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
             }
