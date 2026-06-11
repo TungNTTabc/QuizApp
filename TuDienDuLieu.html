@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; } 
+  table { border-collapse: collapse; margin-bottom: 20px; width: 100%; }
+  th, td { border: 1px solid black; padding: 4px 6px; text-align: left; vertical-align: top; word-wrap: normal; word-break: keep-all; }
+  th { background-color: #d9d9d9; font-weight: bold; text-align: center; }
+  h3 { font-size: 13pt; font-weight: bold; }
+  h4 { font-size: 12pt; font-weight: bold; margin-bottom: 5px; }
+</style>
+</head>
+<body>
+
+<h3>TỪ ĐIỂN DỮ LIỆU HỆ THỐNG QUIZAPP</h3>
+
+<h4>Bảng 1. Khai báo thuộc tính bảng Hồ sơ người dùng (Users)</h4>
+<table>
+  <tr>
+    <th style="width: 15%;">Tên thuộc tính</th>
+    <th style="width: 15%;">Kiểu dữ liệu</th>
+    <th style="width: 10%;">Chiều dài</th>
+    <th style="width: 15%;">Giá trị mẫu</th>
+    <th style="width: 30%;">Mô tả</th>
+    <th style="width: 15%;">Ghi chú</th>
+  </tr>
+  <tr><td><b>UserID</b></td><td>INT</td><td></td><td>1</td><td>Mã định danh người dùng</td><td>PK, Tự tăng, NOT NULL</td></tr>
+  <tr><td><b>Role</b></td><td>VARCHAR</td><td>10</td><td>HS</td><td>Vai trò truy cập (ADMIN, GV, HS)</td><td>NOT NULL</td></tr>
+  <tr><td><b>Username</b></td><td>VARCHAR</td><td>50</td><td>student1</td><td>Tên tài khoản đăng nhập</td><td>UNIQUE, NOT NULL</td></tr>
+  <tr><td><b>Password</b></td><td>VARCHAR</td><td>255</td><td>8c6976e...</td><td>Mật khẩu (mã băm)</td><td>NOT NULL</td></tr>
+  <tr><td><b>FullName</b></td><td>NVARCHAR</td><td>100</td><td>Nguyễn Văn A</td><td>Họ và tên đầy đủ</td><td>NOT NULL</td></tr>
+  <tr><td><b>DOB</b></td><td>DATE</td><td></td><td>2005-05-05</td><td>Ngày tháng năm sinh</td><td>NOT NULL</td></tr>
+  <tr><td><b>Gender</b></td><td>NVARCHAR</td><td>10</td><td>Nam</td><td>Giới tính</td><td>NULL</td></tr>
+  <tr><td><b>StudentID</b></td><td>VARCHAR</td><td>20</td><td>SV001</td><td>Mã số sinh viên (HS)</td><td>UNIQUE, SPARSE NULL</td></tr>
+  <tr><td><b>ClassName</b></td><td>NVARCHAR</td><td>50</td><td>10A1</td><td>Lớp học của học sinh</td><td>NULL</td></tr>
+  <tr><td><b>MainSubject</b></td><td>NVARCHAR</td><td>50</td><td>Toán</td><td>Môn giảng dạy của giáo viên</td><td>NULL</td></tr>
+  <tr><td><b>Phone</b></td><td>VARCHAR</td><td>20</td><td>0987654321</td><td>Số điện thoại liên hệ</td><td>NULL</td></tr>
+  <tr><td><b>Email</b></td><td>VARCHAR</td><td>100</td><td>hs@quiz.com</td><td>Địa chỉ thư điện tử</td><td>NULL</td></tr>
+  <tr><td><b>Address</b></td><td>NVARCHAR</td><td>255</td><td>Hà Nội</td><td>Địa chỉ thường trú</td><td>NULL</td></tr>
+</table>
+
+<h4>Bảng 2. Khai báo thuộc tính bảng Môn học (Subjects)</h4>
+<table>
+  <tr>
+    <th style="width: 15%;">Tên thuộc tính</th>
+    <th style="width: 15%;">Kiểu dữ liệu</th>
+    <th style="width: 10%;">Chiều dài</th>
+    <th style="width: 15%;">Giá trị mẫu</th>
+    <th style="width: 30%;">Mô tả</th>
+    <th style="width: 15%;">Ghi chú</th>
+  </tr>
+  <tr><td><b>SubjectID</b></td><td>INT</td><td></td><td>1</td><td>Mã định danh môn học</td><td>PK, Tự tăng, NOT NULL</td></tr>
+  <tr><td><b>SubjectName</b></td><td>NVARCHAR</td><td>100</td><td>Toán học</td><td>Tên hiển thị của môn học</td><td>UNIQUE, NOT NULL</td></tr>
+</table>
+
+<h4>Bảng 3. Khai báo thuộc tính bảng Ngân hàng câu hỏi (Questions)</h4>
+<table>
+  <tr>
+    <th style="width: 15%;">Tên thuộc tính</th>
+    <th style="width: 15%;">Kiểu dữ liệu</th>
+    <th style="width: 10%;">Chiều dài</th>
+    <th style="width: 15%;">Giá trị mẫu</th>
+    <th style="width: 30%;">Mô tả</th>
+    <th style="width: 15%;">Ghi chú</th>
+  </tr>
+  <tr><td><b>QuestionID</b></td><td>INT</td><td></td><td>105</td><td>Mã định danh câu hỏi</td><td>PK, Tự tăng, NOT NULL</td></tr>
+  <tr><td><b>SubjectID</b></td><td>INT</td><td></td><td>1</td><td>Mã môn học</td><td>FK, NOT NULL</td></tr>
+  <tr><td><b>Content</b></td><td>NVARCHAR</td><td>MAX</td><td>1 + 1 bằng mấy?</td><td>Nội dung câu hỏi</td><td>NOT NULL</td></tr>
+  <tr><td><b>AnswerA</b></td><td>NVARCHAR</td><td>255</td><td>2</td><td>Nội dung đáp án A</td><td>NOT NULL</td></tr>
+  <tr><td><b>AnswerB</b></td><td>NVARCHAR</td><td>255</td><td>3</td><td>Nội dung đáp án B</td><td>NOT NULL</td></tr>
+  <tr><td><b>AnswerC</b></td><td>NVARCHAR</td><td>255</td><td>4</td><td>Nội dung đáp án C</td><td>NOT NULL</td></tr>
+  <tr><td><b>AnswerD</b></td><td>NVARCHAR</td><td>255</td><td>5</td><td>Nội dung đáp án D</td><td>NOT NULL</td></tr>
+  <tr><td><b>CorrectAnswer</b></td><td>CHAR</td><td>1</td><td>A</td><td>Ký tự đáp án đúng</td><td>NOT NULL</td></tr>
+</table>
+
+<h4>Bảng 4. Khai báo thuộc tính bảng Đề thi (Exams)</h4>
+<table>
+  <tr>
+    <th style="width: 15%;">Tên thuộc tính</th>
+    <th style="width: 15%;">Kiểu dữ liệu</th>
+    <th style="width: 10%;">Chiều dài</th>
+    <th style="width: 15%;">Giá trị mẫu</th>
+    <th style="width: 30%;">Mô tả</th>
+    <th style="width: 15%;">Ghi chú</th>
+  </tr>
+  <tr><td><b>ExamID</b></td><td>INT</td><td></td><td>50</td><td>Mã định danh đề thi</td><td>PK, Tự tăng, NOT NULL</td></tr>
+  <tr><td><b>TeacherID</b></td><td>INT</td><td></td><td>2</td><td>Mã Giáo viên tạo đề</td><td>FK, NOT NULL</td></tr>
+  <tr><td><b>SubjectID</b></td><td>INT</td><td></td><td>1</td><td>Đề thi thuộc môn học nào</td><td>FK, NOT NULL</td></tr>
+  <tr><td><b>Title</b></td><td>NVARCHAR</td><td>200</td><td>Thi giữa kỳ 1</td><td>Tiêu đề của đề thi</td><td>NOT NULL</td></tr>
+  <tr><td><b>QuestionCount</b></td><td>INT</td><td></td><td>40</td><td>Tổng số lượng câu hỏi</td><td>NOT NULL</td></tr>
+  <tr><td><b>Duration</b></td><td>INT</td><td></td><td>45</td><td>Thời gian làm bài (Phút)</td><td>NOT NULL</td></tr>
+</table>
+
+<h4>Bảng 5. Khai báo thuộc tính bảng Liên kết Đề thi - Câu hỏi (ExamQuestions)</h4>
+<table>
+  <tr>
+    <th style="width: 15%;">Tên thuộc tính</th>
+    <th style="width: 15%;">Kiểu dữ liệu</th>
+    <th style="width: 10%;">Chiều dài</th>
+    <th style="width: 15%;">Giá trị mẫu</th>
+    <th style="width: 30%;">Mô tả</th>
+    <th style="width: 15%;">Ghi chú</th>
+  </tr>
+  <tr><td><b>ExamID</b></td><td>INT</td><td></td><td>50</td><td>Mã đề thi</td><td>PK, FK, NOT NULL</td></tr>
+  <tr><td><b>QuestionID</b></td><td>INT</td><td></td><td>105</td><td>Mã câu hỏi</td><td>PK, FK, NOT NULL</td></tr>
+</table>
+
+<h4>Bảng 6. Khai báo thuộc tính bảng Phiên kết quả (QuizResults)</h4>
+<table>
+  <tr>
+    <th style="width: 15%;">Tên thuộc tính</th>
+    <th style="width: 15%;">Kiểu dữ liệu</th>
+    <th style="width: 10%;">Chiều dài</th>
+    <th style="width: 15%;">Giá trị mẫu</th>
+    <th style="width: 30%;">Mô tả</th>
+    <th style="width: 15%;">Ghi chú</th>
+  </tr>
+  <tr><td><b>ResultID</b></td><td>INT</td><td></td><td>300</td><td>Mã định danh nộp bài</td><td>PK, Tự tăng, NOT NULL</td></tr>
+  <tr><td><b>StudentID</b></td><td>INT</td><td></td><td>15</td><td>Sinh viên thi</td><td>FK, NOT NULL</td></tr>
+  <tr><td><b>ExamID</b></td><td>INT</td><td></td><td>50</td><td>Mã đề thi (nếu thi thật)</td><td>FK, NULL</td></tr>
+  <tr><td><b>SubjectID</b></td><td>INT</td><td></td><td>1</td><td>Mã môn học đã thi</td><td>FK, NULL</td></tr>
+  <tr><td><b>ResultType</b></td><td>VARCHAR</td><td>20</td><td>EXAM</td><td>Thi thật hay Luyện tập</td><td>NOT NULL</td></tr>
+  <tr><td><b>CorrectCount</b></td><td>INT</td><td></td><td>35</td><td>Số lượng câu đúng</td><td>NOT NULL</td></tr>
+  <tr><td><b>TotalCount</b></td><td>INT</td><td></td><td>40</td><td>Tổng số câu của bài</td><td>NOT NULL</td></tr>
+  <tr><td><b>DurationInSeconds</b></td><td>INT</td><td></td><td>2450</td><td>Số giây đã làm</td><td>NOT NULL</td></tr>
+  <tr><td><b>DateTaken</b></td><td>DATETIME</td><td></td><td>2026/06/10</td><td>Thời điểm nộp bài</td><td>NOT NULL</td></tr>
+</table>
+
+<h4>Bảng 7. Khai báo thuộc tính bảng Chi tiết đáp án (QuizAttemptDetails)</h4>
+<table>
+  <tr>
+    <th style="width: 15%;">Tên thuộc tính</th>
+    <th style="width: 15%;">Kiểu dữ liệu</th>
+    <th style="width: 10%;">Chiều dài</th>
+    <th style="width: 15%;">Giá trị mẫu</th>
+    <th style="width: 30%;">Mô tả</th>
+    <th style="width: 15%;">Ghi chú</th>
+  </tr>
+  <tr><td><b>AttemptDetailID</b></td><td>INT</td><td></td><td>1200</td><td>Mã định danh chi tiết</td><td>PK, Tự tăng, NOT NULL</td></tr>
+  <tr><td><b>ResultID</b></td><td>INT</td><td></td><td>300</td><td>Thuộc phiên nộp bài nào</td><td>FK, NOT NULL</td></tr>
+  <tr><td><b>QuestionID</b></td><td>INT</td><td></td><td>105</td><td>Mã câu hỏi đã làm</td><td>FK, NOT NULL</td></tr>
+  <tr><td><b>SelectedAnswer</b></td><td>CHAR</td><td>1</td><td>A</td><td>Đáp án đã khoanh</td><td>NULL</td></tr>
+  <tr><td><b>IsCorrect</b></td><td>BIT</td><td></td><td>1</td><td>Trạng thái Đúng(1)/Sai(0)</td><td>NOT NULL</td></tr>
+</table>
+
+<h4>Bảng 8. Khai báo thuộc tính bảng Ghi chú học sinh (StudentNotes)</h4>
+<table>
+  <tr>
+    <th style="width: 15%;">Tên thuộc tính</th>
+    <th style="width: 15%;">Kiểu dữ liệu</th>
+    <th style="width: 10%;">Chiều dài</th>
+    <th style="width: 15%;">Giá trị mẫu</th>
+    <th style="width: 30%;">Mô tả</th>
+    <th style="width: 15%;">Ghi chú</th>
+  </tr>
+  <tr><td><b>NoteID</b></td><td>INT</td><td></td><td>10</td><td>Mã định danh ghi chú</td><td>PK, Tự tăng, NOT NULL</td></tr>
+  <tr><td><b>StudentID</b></td><td>INT</td><td></td><td>15</td><td>Ghi chú của ai</td><td>FK, NOT NULL</td></tr>
+  <tr><td><b>NoteContent</b></td><td>NVARCHAR</td><td>MAX</td><td>Cần ôn Đạo hàm</td><td>Nội dung ghi chú</td><td>NULL</td></tr>
+</table>
+
+</body>
+</html>

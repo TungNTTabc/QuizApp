@@ -80,14 +80,14 @@ public class RegisterFrame extends JFrame {
             if (roleCombo.getSelectedItem().equals("Giáo viên")) {
                 txtMSSV.setEnabled(false);
                 txtMSSV.setText("");
-                txtClass.setEnabled(false);
-                txtClass.setText("");
+                // Luôn mở Lớp và Môn cho Giáo viên
+                txtClass.setEnabled(true);
                 txtSubject.setEnabled(true);
             } else {
                 txtMSSV.setEnabled(true);
+                // Luôn mở Lớp và Môn cho Học sinh
                 txtClass.setEnabled(true);
-                txtSubject.setEnabled(false);
-                txtSubject.setText("");
+                txtSubject.setEnabled(true);
             }
         });
         
@@ -148,9 +148,6 @@ public class RegisterFrame extends JFrame {
         bottomPanel.add(btnRegister);
         mainPanel.add(bottomPanel, BorderLayout.SOUTH);
 
-        // Khởi tạo trạng thái ban đầu (Mặc định là Học sinh)
-        txtSubject.setEnabled(false);
-
         add(mainPanel);
     }
 
@@ -187,16 +184,15 @@ public class RegisterFrame extends JFrame {
             return;
         }
 
-        // Logic xử lý Null cho từng Role
+        // Logic xử lý cho từng Role
         if (roleCode.equals("GV")) {
-            mssv = null;
-            className = null;
+            mssv = null; // GV không có Mã số sinh viên
             if (subject.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Giáo viên bắt buộc phải nhập Môn chính!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
                 return;
             }
+            if (className.isEmpty()) className = null; // Nếu không nhập Lớp thì lưu NULL
         } else {
-            subject = null;
             if (mssv.isEmpty() || className.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Học sinh bắt buộc phải nhập Mã số và Lớp!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
                 return;
@@ -205,6 +201,7 @@ public class RegisterFrame extends JFrame {
                 JOptionPane.showMessageDialog(this, "Mã số không được là 0 (đây là mã riêng của Admin)!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
                 return;
             }
+            if (subject.isEmpty()) subject = null; // Nếu không nhập Môn thì lưu NULL
         }
 
         java.sql.Date sqlDob = null;
