@@ -187,22 +187,20 @@ public class RegisterFrame extends JFrame {
         // Logic xử lý cho từng Role
         if (roleCode.equals("GV")) {
             mssv = null; // GV không có Mã số sinh viên
-            if (subject.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Giáo viên bắt buộc phải nhập Môn chính!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            if (className.isEmpty()) className = null; // Nếu không nhập Lớp thì lưu NULL
         } else {
-            if (mssv.isEmpty() || className.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Học sinh bắt buộc phải nhập Mã số và Lớp!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+            if (mssv.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Học sinh bắt buộc phải nhập Mã số sinh viên!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if (mssv.equals("0")) {
                 JOptionPane.showMessageDialog(this, "Mã số không được là 0 (đây là mã riêng của Admin)!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            if (subject.isEmpty()) subject = null; // Nếu không nhập Môn thì lưu NULL
         }
+        
+        // Cả Lớp và Môn chính đều là tùy chọn (không bắt buộc) cho cả 2 vai trò
+        if (className.isEmpty()) className = null;
+        if (subject.isEmpty()) subject = null;
 
         java.sql.Date sqlDob = null;
         try {
